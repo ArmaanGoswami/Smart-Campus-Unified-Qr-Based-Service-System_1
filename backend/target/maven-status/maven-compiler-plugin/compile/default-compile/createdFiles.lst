@@ -1,0 +1,8 @@
+com\smartcampus\repository\GatePassRepository.class
+com\smartcampus\controller\GatePassController.class
+com\smartcampus\model\GatePass.class
+com\smartcampus\repository\AppConfigRepository.class
+com\smartcampus\config\CorsConfig.class
+com\smartcampus\SmartCampusApplication.class
+com\smartcampus\model\AppConfig.class
+com\smartcampus\service\GatePassService.class
