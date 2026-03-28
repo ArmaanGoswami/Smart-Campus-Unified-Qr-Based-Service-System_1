@@ -4,6 +4,7 @@ import {
   Animated,
   Easing,
   FlatList,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -11,9 +12,11 @@ import {
   View,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Ellipse, Rect, Path, G } from 'react-native-svg';
 import { request } from '../config/api';
+import { crossAlert, crossConfirm } from '../config/utils';
 
+// ─── Utility ─────────────────────────────────────────────────────────────────
 const parsePassIdFromQr = (rawData) => {
   const text = String(rawData || '').trim();
   if (!text) return '';
@@ -21,9 +24,7 @@ const parsePassIdFromQr = (rawData) => {
     try {
       const parsed = JSON.parse(text);
       return String(parsed.passId || parsed.id || '').trim();
-    } catch {
-      return '';
-    }
+    } catch { return ''; }
   }
   if (text.includes('/')) {
     const cleaned = text.replace(/\/$/, '');
@@ -47,9 +48,62 @@ const formatDate = (value, fallbackId) => {
 
 const getResultMeta = (status) => {
   const s = String(status || '').toUpperCase();
-  if (s === 'APPROVED') return { allowed: true,  label: 'Entry Allowed',  text: '#4ADE80', bg: 'rgba(74, 222, 128, 0.2)', border: 'rgba(74, 222, 128, 0.4)' };
-  return                        { allowed: false, label: 'Entry Denied',   text: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.35)' };
+  if (s === 'APPROVED') return { allowed: true,  label: 'Entry Allowed', text: '#064E3B', bg: '#D1FAE5', border: '#6EE7B7' };
+  return               { allowed: false, label: 'Entry Denied',  text: '#7F1D1D', bg: '#FEE2E2', border: '#FCA5A5' };
 };
+
+const getNormalizedStatus  = (value) => String(value || '').toUpperCase();
+const isAllowedScanStatus  = (value) => ['APPROVED', 'USED', 'EXITED', 'COMPLETED'].includes(getNormalizedStatus(value));
+const isDeniedScanStatus   = (value) => ['REJECTED', 'DENIED', 'INVALID'].includes(getNormalizedStatus(value));
+
+// ─── Clay Guard Character ─────────────────────────────────────────────────────
+function GuardCharacter() {
+  return (
+    <Svg width={80} height={80} viewBox="0 0 80 80">
+      <Ellipse cx="40" cy="78" rx="18" ry="4" fill="rgba(27,188,163,0.2)" />
+      {/* Body — teal uniform */}
+      <Rect x="16" y="48" width="48" height="34" rx="16" fill="#1BBCA3" />
+      {/* Uniform badge */}
+      <Rect x="26" y="54" width="28" height="20" rx="8" fill="#0D9C83" />
+      <Rect x="30" y="58" width="20" height="3" rx="2" fill="#fff" opacity="0.8" />
+      <Rect x="33" y="63" width="14" height="2" rx="1" fill="#fff" opacity="0.5" />
+      {/* Shield emblem */}
+      <Path d="M40 56 L38 60 L40 62 L42 60Z" fill="#FFD700" opacity="0.9" />
+      {/* Neck */}
+      <Rect x="32" y="40" width="16" height="12" rx="6" fill="#FDDCB0" />
+      {/* Head */}
+      <Circle cx="40" cy="30" r="22" fill="#FDDCB0" />
+      {/* Cap */}
+      <Rect x="18" y="13" width="44" height="6" rx="3" fill="#0D9C83" />
+      <Rect x="22" y="8"  width="36" height="12" rx="6" fill="#1BBCA3" />
+      {/* Cap badge */}
+      <Ellipse cx="40" cy="10" rx="5" ry="4" fill="#FFD700" opacity="0.9" />
+      {/* Eyes */}
+      <Circle cx="34" cy="28" r="3.5" fill="#fff" />
+      <Circle cx="46" cy="28" r="3.5" fill="#fff" />
+      <Circle cx="34.8" cy="28.8" r="2"   fill="#3D2314" />
+      <Circle cx="46.8" cy="28.8" r="2"   fill="#3D2314" />
+      <Circle cx="35.3" cy="28"   r="0.9" fill="#fff" />
+      <Circle cx="47.3" cy="28"   r="0.9" fill="#fff" />
+      {/* Mouth firm line */}
+      <Path d="M34 39 Q40 43 46 39" stroke="#D97540" strokeWidth="2" strokeLinecap="round" fill="none" />
+      {/* Cheeks */}
+      <Ellipse cx="27" cy="35" rx="4" ry="2.5" fill="#FFB3A0" opacity="0.65" />
+      <Ellipse cx="53" cy="35" rx="4" ry="2.5" fill="#FFB3A0" opacity="0.65" />
+    </Svg>
+  );
+}
+
+// ─── Clay Background ──────────────────────────────────────────────────────────
+function ClayBg() {
+  return (
+    <Svg style={StyleSheet.absoluteFillObject} viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice">
+      <Ellipse cx="340" cy="80"  rx="120" ry="120" fill="#B8F0E8" opacity="0.55" />
+      <Ellipse cx="20"  cy="380" rx="100" ry="100" fill="#C8F5EE" opacity="0.5"  />
+      <Ellipse cx="370" cy="720" rx="110" ry="110" fill="#D0F5F0" opacity="0.4"  />
+    </Svg>
+  );
+}
 
 export default function GuardScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -80,8 +134,8 @@ export default function GuardScreen({ navigation }) {
     resultScale.setValue(0.88);
     resultOpacity.setValue(0);
     Animated.parallel([
-      Animated.spring(resultScale,   { toValue: 1,   friction: 6, useNativeDriver: true }),
-      Animated.timing(resultOpacity, { toValue: 1,   duration: 220, useNativeDriver: true }),
+      Animated.spring(resultScale,   { toValue: 1,   friction: 6,               useNativeDriver: true }),
+      Animated.timing(resultOpacity, { toValue: 1,   duration: 220,             useNativeDriver: true }),
     ]).start();
   };
 
@@ -90,11 +144,8 @@ export default function GuardScreen({ navigation }) {
       setHistLoading(true);
       const logs = await request('/guard/history', { method: 'GET' });
       setTodayScans(Array.isArray(logs) ? logs : []);
-    } catch {
-      setTodayScans([]);
-    } finally {
-      setHistLoading(false);
-    }
+    } catch { setTodayScans([]); }
+    finally { setHistLoading(false); }
   }, []);
 
   useEffect(() => {
@@ -114,120 +165,96 @@ export default function GuardScreen({ navigation }) {
   const handleStartScan = async () => {
     if (!permission?.granted) {
       const res = await requestPermission();
-      if (!res.granted) {
-        Alert.alert('Permission Required', 'Camera permission is required to scan QR codes.');
-        return;
+      if (!res.granted) { 
+        crossAlert('Permission Required', 'Camera permission is required to scan QR codes.'); 
+        return; 
       }
     }
-    setLastResult(null);
-    setScanned(false);
-    setCameraActive(true);
+    setLastResult(null); setScanned(false); setCameraActive(true);
   };
 
-  const handleStopScan = () => {
-    setCameraActive(false);
-    setScanned(false);
-  };
+  const handleStopScan = () => { setCameraActive(false); setScanned(false); };
 
   const handleBarCodeScanned = async ({ data }) => {
     if (scanned || verifyLoading) return;
-    setScanned(true);
-    setVerifyLoading(true);
-
+    setScanned(true); setVerifyLoading(true);
     try {
       const passId = parsePassIdFromQr(data);
       if (!passId) throw new Error('Invalid QR code. A valid Gate Pass ID was not found.');
-
       const passDetails = await request(`/${encodeURIComponent(passId)}/verify`, { method: 'GET' });
-      const meta        = getResultMeta(passDetails?.status);
-
+      const meta = getResultMeta(passDetails?.status);
       setLastResult({ passDetails, meta });
-      showResultAnim();
-      setCameraActive(false);
+      showResultAnim(); setCameraActive(false);
       await fetchTodayScans();
     } catch (error) {
       setLastResult(null);
-      Alert.alert('Verification Failed', error?.message || 'Unable to verify pass.', [
-        { text: 'Try Again', onPress: () => { setScanned(false); setCameraActive(true); } },
-        { text: 'Cancel',    onPress: () => { setScanned(false); setCameraActive(false); } },
-      ]);
-    } finally {
-      setVerifyLoading(false);
-    }
+      crossConfirm('Verification Failed', error?.message || 'Unable to verify pass.',
+        () => { setScanned(false); setCameraActive(true); }
+      );
+    } finally { setVerifyLoading(false); }
   };
 
-  const todayAllowed  = todayScans.filter((i) => String(i?.status || '').toUpperCase() === 'APPROVED').length;
-  const todayDenied   = todayScans.filter((i) => String(i?.status || '').toUpperCase() !== 'APPROVED').length;
+  const todayAllowed = todayScans.filter((i) => isAllowedScanStatus(i?.status)).length;
+  const todayDenied  = todayScans.filter((i) => isDeniedScanStatus(i?.status)).length;
 
-  const renderScanItem = ({ item }) => (
-    <View style={styles.scanRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.scanName}>{item?.studentName || item?.studentId || 'Unknown'}</Text>
-        <Text style={styles.scanMeta}>{item?.reason || 'N/A'}    {formatDate(item?.scannedAt || item?.createdAt, item?.id)}</Text>
+  const renderScanItem = ({ item }) => {
+    const isAllowed = isAllowedScanStatus(item?.status);
+    return (
+      <View style={styles.scanRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.scanName}>{item?.studentName || item?.studentId || 'Unknown'}</Text>
+          <Text style={styles.scanMeta}>{item?.reason || 'N/A'}   {formatDate(item?.scannedAt || item?.createdAt, item?.id)}</Text>
+        </View>
+        <View style={[styles.scanChip, { backgroundColor: isAllowed ? '#D1FAE5' : '#FEE2E2', borderColor: isAllowed ? '#6EE7B7' : '#FCA5A5' }]}>
+          <Text style={[styles.scanChipTxt, { color: isAllowed ? '#064E3B' : '#7F1D1D' }]}>
+            {getNormalizedStatus(item?.status || 'N/A')}
+          </Text>
+        </View>
       </View>
-      <View style={[
-        styles.scanChip,
-        { backgroundColor: String(item?.status || '').toUpperCase() === 'APPROVED' ? '#DCFCE7' : '#FEE2E2' },
-      ]}>
-        <Text style={[
-          styles.scanChipTxt,
-          { color: String(item?.status || '').toUpperCase() === 'APPROVED' ? '#166534' : '#991B1B' },
-        ]}>
-          {String(item?.status || 'N/A').toUpperCase()}
-        </Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.screen}>
-      <LinearGradient 
-        colors={['#FFF1DD', '#FFEBE3', '#FF9A58', '#FF7A3E']} 
-        start={{ x: 0.2, y: 0 }} 
-        end={{ x: 1, y: 1.2 }}
-        style={styles.backgroundGradient}
-      />
-      <View style={styles.blobTopRight} />
-      <View style={styles.blobBottomLeft} />
+      <ClayBg />
 
-      <LinearGradient
-        colors={['#FF9C5E', '#FF8C42', '#FF7A3E']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
+      {/* ── Header ── */}
+      <View style={styles.header}>
         <View>
           <Text style={styles.headerEyebrow}>Smart Campus</Text>
           <Text style={styles.headerTitle}>Guard Scanner</Text>
-          <Text style={styles.headerSub}>Scan student QR codes to verify gate passes</Text>
+          <Text style={styles.headerSub}>Scan student QR codes to verify passes</Text>
         </View>
-        <Animated.View style={[styles.scanCountBadge, { transform: [{ scale: pendingPulse }] }]}>
-          <Text style={styles.scanCountNum}>{todayScans.length}</Text>
-          <Text style={styles.scanCountLbl}>Today</Text>
-        </Animated.View>
-      </LinearGradient>
+        <View style={styles.headerRight}>
+          <GuardCharacter />
+          <Animated.View style={[styles.scanCountBadge, { transform: [{ scale: pendingPulse }] }]}>
+            <Text style={styles.scanCountNum}>{todayScans.length}</Text>
+            <Text style={styles.scanCountLbl}>Today</Text>
+          </Animated.View>
+        </View>
+      </View>
 
       <Animated.ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={histLoading} onRefresh={fetchTodayScans} tintColor="#CF202E" />}
+        refreshControl={<RefreshControl refreshing={histLoading} onRefresh={fetchTodayScans} tintColor="#1BBCA3" />}
         style={{ opacity: screenOpacity, transform: [{ translateY: screenTranslate }] }}
       >
+        {/* ── Stats ── */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, styles.statBlue]}>
-            <Text style={styles.statLbl}>Total Scans</Text>
-            <Text style={styles.statNum}>{todayScans.length}</Text>
-          </View>
-          <View style={[styles.statCard, styles.statGreen]}>
-            <Text style={styles.statLbl}>Allowed</Text>
-            <Text style={styles.statNum}>{todayAllowed}</Text>
-          </View>
-          <View style={[styles.statCard, styles.statRed]}>
-            <Text style={styles.statLbl}>Denied</Text>
-            <Text style={styles.statNum}>{todayDenied}</Text>
-          </View>
+          {[
+            { label: 'Total Scans', val: todayScans.length, bg: '#DBEAFE', border: '#93C5FD', tc: '#1E3A5F' },
+            { label: 'Allowed',     val: todayAllowed,       bg: '#D1FAE5', border: '#6EE7B7', tc: '#064E3B' },
+            { label: 'Denied',      val: todayDenied,        bg: '#FEE2E2', border: '#FCA5A5', tc: '#7F1D1D' },
+          ].map((s) => (
+            <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg, borderColor: s.border }]}>
+              <Text style={[styles.statLbl, { color: s.tc }]}>{s.label}</Text>
+              <Text style={[styles.statNum, { color: s.tc }]}>{s.val}</Text>
+            </View>
+          ))}
         </View>
 
+        {/* ── Scan Button ── */}
         {!cameraActive && (
           <Animated.View style={{ transform: [{ scale: getPressScale('scan') }] }}>
             <Pressable
@@ -236,17 +263,18 @@ export default function GuardScreen({ navigation }) {
               onPressOut={() => animPress(getPressScale('scan'), 1)}
               onPress={handleStartScan}
             >
-              <Text style={styles.scanCtaIcon}></Text>
+              <Text style={styles.scanCtaIcon}>📷</Text>
               <Text style={styles.scanCtaTitle}>Scan QR Code</Text>
               <Text style={styles.scanCtaSub}>The camera will open when you tap here</Text>
             </Pressable>
           </Animated.View>
         )}
 
+        {/* ── Camera ── */}
         {cameraActive && (
           <View style={styles.cameraCard}>
             <Text style={styles.cameraLabel}>
-              {verifyLoading ? 'Verifying...' : 'Keep the QR code inside the box'}
+              {verifyLoading ? 'Verifying…' : 'Keep the QR code inside the frame'}
             </Text>
             <View style={styles.cameraBox}>
               <CameraView
@@ -255,35 +283,39 @@ export default function GuardScreen({ navigation }) {
                 onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
                 barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
               />
-              <View style={styles.scanCornerTL} />
-              <View style={styles.scanCornerTR} />
-              <View style={styles.scanCornerBL} />
-              <View style={styles.scanCornerBR} />
+              {/* Clay corner markers */}
+              <View style={[styles.corner, styles.cornerTL]} />
+              <View style={[styles.corner, styles.cornerTR]} />
+              <View style={[styles.corner, styles.cornerBL]} />
+              <View style={[styles.corner, styles.cornerBR]} />
               {verifyLoading && (
                 <View style={styles.verifyOverlay}>
-                  <Text style={styles.verifyOverlayTxt}>Verifying Pass...</Text>
+                  <Text style={styles.verifyOverlayTxt}>Verifying Pass…</Text>
                 </View>
               )}
             </View>
-            <Pressable
-              style={styles.cancelScanBtn}
-              onPress={handleStopScan}
-            >
-              <Text style={styles.cancelScanTxt}>Cancel</Text>
+            <Pressable style={styles.cancelScanBtn} onPress={handleStopScan}>
+              <Text style={styles.cancelScanTxt}>✕ Cancel</Text>
             </Pressable>
           </View>
         )}
 
+        {/* ── Result Card ── */}
         {lastResult && (
           <Animated.View
             style={[
               styles.resultCard,
-              { borderColor: lastResult.meta.border, transform: [{ scale: resultScale }], opacity: resultOpacity },
+              {
+                borderColor: lastResult.meta.border,
+                backgroundColor: lastResult.meta.bg,
+                transform: [{ scale: resultScale }],
+                opacity: resultOpacity,
+              },
             ]}
           >
-            <View style={[styles.resultBanner, { backgroundColor: lastResult.meta.bg }]}>
+            <View style={styles.resultBanner}>
               <Text style={[styles.resultBannerTxt, { color: lastResult.meta.text }]}>
-                {lastResult.meta.allowed ? '  Entry Allowed' : '  Entry Denied'}
+                {lastResult.meta.allowed ? '✅  Entry Allowed' : '🚫  Entry Denied'}
               </Text>
             </View>
             <View style={styles.resultBody}>
@@ -291,14 +323,15 @@ export default function GuardScreen({ navigation }) {
                 {lastResult.passDetails?.studentName || lastResult.passDetails?.studentId || 'Unknown Student'}
               </Text>
               <View style={styles.resultMetaRow}>
-                <View style={styles.resultMetaPill}>
-                  <Text style={styles.metaKey}>Reason</Text>
-                  <Text style={styles.metaVal}>{lastResult.passDetails?.reason || 'N/A'}</Text>
-                </View>
-                <View style={styles.resultMetaPill}>
-                  <Text style={styles.metaKey}>Out Time</Text>
-                  <Text style={styles.metaVal}>{lastResult.passDetails?.outTime || 'N/A'}</Text>
-                </View>
+                {[
+                  { k: 'Reason',   v: lastResult.passDetails?.reason  || 'N/A' },
+                  { k: 'Out Time', v: lastResult.passDetails?.outTime  || 'N/A' },
+                ].map((m) => (
+                  <View key={m.k} style={styles.resultMetaPill}>
+                    <Text style={styles.metaKey}>{m.k}</Text>
+                    <Text style={styles.metaVal}>{m.v}</Text>
+                  </View>
+                ))}
               </View>
               <View style={styles.resultActions}>
                 <Animated.View style={{ transform: [{ scale: getPressScale('rescan') }] }}>
@@ -308,7 +341,7 @@ export default function GuardScreen({ navigation }) {
                     onPressOut={() => animPress(getPressScale('rescan'), 1)}
                     onPress={handleStartScan}
                   >
-                    <Text style={styles.rescanTxt}>Scan Next</Text>
+                    <Text style={styles.rescanTxt}>📷 Scan Next</Text>
                   </Pressable>
                 </Animated.View>
               </View>
@@ -316,6 +349,7 @@ export default function GuardScreen({ navigation }) {
           </Animated.View>
         )}
 
+        {/* ── Today's Scan Log ── */}
         <View style={styles.historyCard}>
           <View style={styles.historyHeaderRow}>
             <Text style={styles.historyTitle}>Today's Scan Log</Text>
@@ -327,11 +361,10 @@ export default function GuardScreen({ navigation }) {
                 onPressOut={() => animPress(getPressScale('refresh'), 1)}
                 onPress={fetchTodayScans}
               >
-                <Text style={styles.refreshBtnTxt}>{histLoading ? '' : ''}</Text>
+                <Text style={styles.refreshBtnTxt}>↻</Text>
               </Pressable>
             </Animated.View>
           </View>
-
           <FlatList
             data={todayScans}
             keyExtractor={(item) => String(item?.id || Math.random())}
@@ -340,12 +373,13 @@ export default function GuardScreen({ navigation }) {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={
               <Text style={styles.emptyTxt}>
-                {histLoading ? 'Loading scan history...' : 'No scan records found for today.'}
+                {histLoading ? 'Loading scan history…' : 'No scan records found for today.'}
               </Text>
             }
           />
         </View>
 
+        {/* ── Logout ── */}
         <Animated.View style={{ transform: [{ scale: getPressScale('logout') }] }}>
           <Pressable
             style={styles.logoutBtn}
@@ -361,164 +395,157 @@ export default function GuardScreen({ navigation }) {
   );
 }
 
-const CORNER_SIZE = 22;
-const CORNER_THICK = 3;
+const CORNER_SIZE  = 24;
+const CORNER_THICK = 3.5;
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
-  blobTopRight: { position: 'absolute', top: -60, right: -50, width: 200, height: 200, borderRadius: 120, backgroundColor: 'rgba(255, 195, 132, 0.25)', zIndex: 1 },
-  blobBottomLeft: { position: 'absolute', bottom: 100, left: -80, width: 220, height: 220, borderRadius: 130, backgroundColor: 'rgba(255, 154, 88, 0.2)', opacity: 0.7, zIndex: 1 },
+  screen: { flex: 1, backgroundColor: '#EDFCF8' },
 
+  // Header
   header: {
-    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
-    paddingHorizontal: 18, paddingTop: 18, paddingBottom: 18,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.24, shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 }, elevation: 9, zIndex: 3,
-  },
-  headerEyebrow: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 11, fontWeight: '700', letterSpacing: 0.4, marginBottom: 4 },
-  headerTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '800' },
-  headerSub: { color: 'rgba(255, 255, 255, 0.8)', fontSize: 12, fontWeight: '500', marginTop: 4, maxWidth: 240 },
-
-  scanCountBadge: {
-    minWidth: 70, height: 70, borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.28)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.4)',
-    justifyContent: 'center', alignItems: 'center',
-    backdropFilter: 'blur(10px)',
-  },
-  scanCountNum: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', lineHeight: 26 },
-  scanCountLbl: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-
-  scrollContent: { padding: 14, paddingTop: 12, paddingBottom: 28, zIndex: 2 },
-
-  statsRow: { flexDirection: 'row', marginBottom: 12, justifyContent: 'space-between' },
-  statCard: { flex: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 10, marginHorizontal: 3, borderWidth: 1.2 },
-  statBlue:  { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(147, 197, 253, 0.3)' },
-  statGreen: { backgroundColor: 'rgba(74, 222, 128, 0.18)', borderColor: 'rgba(132, 204, 22, 0.3)' },
-  statRed:   { backgroundColor: 'rgba(248, 113, 113, 0.15)', borderColor: 'rgba(239, 68, 68, 0.25)' },
-  statLbl: { color: '#999999', fontSize: 11, fontWeight: '700' },
-  statNum: { color: '#1A1A1A', fontSize: 22, fontWeight: '800', marginTop: 2 },
-
-  scanCta: {
-    backgroundColor: 'rgba(255, 122, 62, 0.8)',
-    borderRadius: 16, padding: 22,
-    alignItems: 'center', marginBottom: 12,
-    shadowColor: '#FF8C42', shadowOpacity: 0.3, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 }, elevation: 7,
-    borderWidth: 1.2, borderColor: 'rgba(255, 188, 120, 0.3)',
-  },
-  scanCtaIcon:  { fontSize: 36, color: '#FFFFFF', marginBottom: 6 },
-  scanCtaTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
-  scanCtaSub:   { color: 'rgba(255, 255, 255, 0.85)', fontSize: 12, marginTop: 5, textAlign: 'center' },
-
-  cameraCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.54)', borderRadius: 16,
-    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)',
-    padding: 14, marginBottom: 12,
+    backgroundColor: '#1BBCA3',
+    paddingTop: Platform.OS === 'android' ? 42 : 54,
+    paddingBottom: 18,
+    paddingHorizontal: 18,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: 'rgba(255, 122, 62, 0.3)', shadowOpacity: 0.2, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 }, elevation: 4,
-    backdropFilter: 'blur(12px)',
+    shadowColor: '#0D7A6A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.38,
+    shadowRadius: 16,
+    elevation: 14,
   },
-  cameraLabel: { color: '#FF7A3E', fontWeight: '700', fontSize: 13, marginBottom: 12 },
+  headerEyebrow: { color: 'rgba(255,255,255,0.72)', fontSize: 11, fontWeight: '700', letterSpacing: 0.4, marginBottom: 3 },
+  headerTitle:   { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
+  headerSub:     { color: 'rgba(255,255,255,0.82)', fontSize: 12, fontWeight: '600', marginTop: 4, maxWidth: 200 },
+  headerRight:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scanCountBadge: {
+    minWidth: 64, height: 64, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  scanCountNum: { fontSize: 22, fontWeight: '900', color: '#fff' },
+  scanCountLbl: { fontSize: 10, fontWeight: '800', color: '#fff', opacity: 0.9 },
+
+  // Scroll
+  scrollContent: { padding: 14, paddingTop: 12, paddingBottom: 28 },
+
+  // Stats
+  statsRow: { flexDirection: 'row', marginBottom: 12, gap: 8 },
+  statCard: {
+    flex: 1, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 10, borderWidth: 2.5,
+    shadowColor: '#1BBCA3', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.18, shadowRadius: 10, elevation: 5,
+  },
+  statLbl: { fontSize: 11, fontWeight: '800' },
+  statNum: { fontSize: 24, fontWeight: '900', marginTop: 2 },
+
+  // Scan Button
+  scanCta: {
+    backgroundColor: '#1BBCA3', borderRadius: 26, padding: 24,
+    alignItems: 'center', marginBottom: 14,
+    shadowColor: '#0D7A6A', shadowOpacity: 0.38, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 7 }, elevation: 10,
+    borderWidth: 3, borderColor: '#4ED9C8',
+  },
+  scanCtaIcon:  { fontSize: 40, marginBottom: 6 },
+  scanCtaTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '900' },
+  scanCtaSub:   { color: 'rgba(255,255,255,0.82)', fontSize: 12, marginTop: 5, textAlign: 'center' },
+
+  // Camera
+  cameraCard: {
+    backgroundColor: '#FFFFFF', borderRadius: 26, borderWidth: 3, borderColor: '#B8F0E8',
+    padding: 14, marginBottom: 12, alignItems: 'center',
+    shadowColor: '#1BBCA3', shadowOpacity: 0.2, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 }, elevation: 7,
+  },
+  cameraLabel: { color: '#0D7A6A', fontWeight: '800', fontSize: 13, marginBottom: 12 },
   cameraBox: {
-    width: 270, height: 270,
-    borderRadius: 16, overflow: 'hidden',
-    backgroundColor: '#000',
-    position: 'relative',
+    width: 270, height: 270, borderRadius: 20, overflow: 'hidden',
+    backgroundColor: '#000', position: 'relative',
   },
-
-  scanCornerTL: { position: 'absolute', top: 10, left: 10, width: CORNER_SIZE, height: CORNER_SIZE, borderTopWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderColor: '#FF7A3E', borderTopLeftRadius: 6 },
-  scanCornerTR: { position: 'absolute', top: 10, right: 10, width: CORNER_SIZE, height: CORNER_SIZE, borderTopWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderColor: '#FF7A3E', borderTopRightRadius: 6 },
-  scanCornerBL: { position: 'absolute', bottom: 10, left: 10, width: CORNER_SIZE, height: CORNER_SIZE, borderBottomWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderColor: '#FF7A3E', borderBottomLeftRadius: 6 },
-  scanCornerBR: { position: 'absolute', bottom: 10, right: 10, width: CORNER_SIZE, height: CORNER_SIZE, borderBottomWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderColor: '#FF7A3E', borderBottomLeftRadius: 6 },
-
+  corner: {
+    position: 'absolute', width: CORNER_SIZE, height: CORNER_SIZE, borderColor: '#1BBCA3',
+  },
+  cornerTL: { top: 10, left: 10, borderTopWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderTopLeftRadius: 7 },
+  cornerTR: { top: 10, right: 10, borderTopWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderTopRightRadius: 7 },
+  cornerBL: { bottom: 10, left: 10, borderBottomWidth: CORNER_THICK, borderLeftWidth: CORNER_THICK, borderBottomLeftRadius: 7 },
+  cornerBR: { bottom: 10, right: 10, borderBottomWidth: CORNER_THICK, borderRightWidth: CORNER_THICK, borderBottomRightRadius: 7 },
   verifyOverlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center',
   },
-  verifyOverlayTxt: { color: '#FFFFFF', fontWeight: '800', fontSize: 16 },
-
+  verifyOverlayTxt: { color: '#FFFFFF', fontWeight: '900', fontSize: 16 },
   cancelScanBtn: {
-    marginTop: 12, backgroundColor: 'rgba(255, 255, 255, 0.32)',
-    borderRadius: 10, paddingVertical: 10, paddingHorizontal: 28,
-    borderWidth: 1.1, borderColor: 'rgba(255, 188, 120, 0.32)',
-    backdropFilter: 'blur(8px)',
+    marginTop: 12, backgroundColor: '#EDFCF8', borderRadius: 14,
+    paddingVertical: 10, paddingHorizontal: 28,
+    borderWidth: 2.5, borderColor: '#B8F0E8',
+    shadowColor: '#1BBCA3', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
   },
-  cancelScanTxt: { color: '#FF7A3E', fontWeight: '700', fontSize: 14 },
+  cancelScanTxt: { color: '#0D7A6A', fontWeight: '800', fontSize: 14 },
 
+  // Result
   resultCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.54)', borderRadius: 16,
-    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)', overflow: 'hidden',
-    marginBottom: 12,
-    shadowColor: 'rgba(255, 122, 62, 0.3)', shadowOpacity: 0.2, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 }, elevation: 5,
-    backdropFilter: 'blur(12px)',
+    borderRadius: 26, borderWidth: 3, overflow: 'hidden', marginBottom: 14,
+    shadowColor: '#1BBCA3', shadowOpacity: 0.2, shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 }, elevation: 8,
   },
-  resultBanner: { paddingVertical: 14, alignItems: 'center', backgroundColor: 'rgba(255, 195, 132, 0.2)' },
-  resultBannerTxt: { fontSize: 18, fontWeight: '800' },
-  resultBody: { padding: 14 },
-  resultName: { color: '#1A1A1A', fontSize: 17, fontWeight: '800', marginBottom: 10 },
-  resultMetaRow: { flexDirection: 'row', marginBottom: 12 },
+  resultBanner: { paddingVertical: 16, alignItems: 'center' },
+  resultBannerTxt: { fontSize: 18, fontWeight: '900' },
+  resultBody: { padding: 14, backgroundColor: '#FFFFFF' },
+  resultName: { color: '#1A1A1A', fontSize: 17, fontWeight: '900', marginBottom: 10 },
+  resultMetaRow: { flexDirection: 'row', marginBottom: 12, gap: 8 },
   resultMetaPill: {
-    flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.3)', borderWidth: 0.8, borderColor: 'rgba(255, 188, 120, 0.25)',
-    borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginRight: 8,
-    backdropFilter: 'blur(8px)',
+    flex: 1, backgroundColor: '#EDFCF8', borderRadius: 14, borderWidth: 2,
+    borderColor: '#B8F0E8', paddingVertical: 8, paddingHorizontal: 10,
   },
-  metaKey: { color: '#999999', fontSize: 11, fontWeight: '700', marginBottom: 2 },
-  metaVal: { color: '#1A1A1A', fontSize: 13, fontWeight: '600' },
+  metaKey: { color: '#0D7A6A', fontSize: 11, fontWeight: '800', marginBottom: 2 },
+  metaVal: { color: '#1A1A1A', fontSize: 13, fontWeight: '700' },
   resultActions: { alignItems: 'flex-end' },
   rescanBtn: {
-    backgroundColor: 'rgba(255, 122, 62, 0.8)', borderRadius: 10,
-    paddingVertical: 10, paddingHorizontal: 22,
-    borderWidth: 1.1, borderColor: 'rgba(255, 188, 120, 0.28)',
+    backgroundColor: '#1BBCA3', borderRadius: 14,
+    paddingVertical: 11, paddingHorizontal: 22,
+    borderWidth: 2.5, borderColor: '#4ED9C8',
+    shadowColor: '#0D7A6A', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 7,
   },
-  rescanTxt: { color: '#FFFFFF', fontWeight: '800', fontSize: 14 },
+  rescanTxt: { color: '#FFFFFF', fontWeight: '900', fontSize: 14 },
 
+  // History
   historyCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.54)', borderRadius: 16,
-    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: '#FFFFFF', borderRadius: 26, borderWidth: 3, borderColor: '#B8F0E8',
     padding: 14, marginBottom: 12,
-    shadowColor: 'rgba(255, 122, 62, 0.3)', shadowOpacity: 0.15, shadowRadius: 10,
-    shadowOffset: { width: 0, height: 3 }, elevation: 4,
-    backdropFilter: 'blur(12px)',
-  },
-  historyHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  historyTitle: { color: '#FF7A3E', fontSize: 16, fontWeight: '800' },
-  refreshBtn: {
-    width: 38, height: 38, borderRadius: 10,
-    backgroundColor: 'rgba(255, 122, 62, 0.8)', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.1, borderColor: 'rgba(255, 188, 120, 0.28)',
-  },
-  refreshBtnTxt: { color: '#FFFFFF', fontSize: 20, fontWeight: '700', lineHeight: 22 },
-
-  scanRow: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 8,
-  },
-  scanName: { color: '#1A1A1A', fontSize: 14, fontWeight: '700' },
-  scanMeta: { color: '#999999', fontSize: 11, marginTop: 2 },
-  scanChip: { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 5, borderWidth: 0.8, borderColor: 'rgba(255, 188, 120, 0.3)' },
-  scanChipTxt: { fontWeight: '800', fontSize: 11 },
-  separator: { height: 1, backgroundColor: 'rgba(255, 188, 120, 0.15)' },
-
-  emptyTxt: { color: '#999999', fontSize: 13, textAlign: 'center', paddingVertical: 10 },
-
-  logoutBtn: {
-    backgroundColor: 'rgba(255, 122, 62, 0.85)', borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-    minHeight: 50, borderWidth: 1.2, borderColor: 'rgba(255, 188, 120, 0.32)',
-    shadowColor: '#FF7A3E', shadowOpacity: 0.25, shadowRadius: 10,
+    shadowColor: '#1BBCA3', shadowOpacity: 0.15, shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
-  logoutTxt: { color: '#FFFFFF', fontWeight: '800', fontSize: 16, letterSpacing: 0.2 },
+  historyHeaderRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10,
+  },
+  historyTitle: { color: '#0D7A6A', fontSize: 16, fontWeight: '900' },
+  refreshBtn: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: '#1BBCA3', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: '#4ED9C8',
+    shadowColor: '#0D7A6A', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 6,
+  },
+  refreshBtnTxt: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
+  scanRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9 },
+  scanName: { color: '#1A1A1A', fontSize: 14, fontWeight: '800' },
+  scanMeta: { color: '#6B8F8A', fontSize: 11, marginTop: 2 },
+  scanChip: {
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 2,
+  },
+  scanChipTxt: { fontWeight: '900', fontSize: 11 },
+  separator: { height: 1.5, backgroundColor: '#D0F5F0' },
+  emptyTxt: { color: '#6B8F8A', fontSize: 13, textAlign: 'center', paddingVertical: 12, fontWeight: '600' },
+
+  // Logout
+  logoutBtn: {
+    backgroundColor: '#1BBCA3', borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+    minHeight: 52,
+    borderWidth: 2.5, borderColor: '#4ED9C8',
+    shadowColor: '#0D7A6A', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.38, shadowRadius: 12, elevation: 10,
+  },
+  logoutTxt: { color: '#FFFFFF', fontWeight: '900', fontSize: 16, letterSpacing: 0.2 },
 });
-
-

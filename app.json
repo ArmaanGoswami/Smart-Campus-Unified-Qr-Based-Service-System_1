@@ -11,7 +11,15 @@
     "ios": {
       "supportsTablet": true
     },
-    "android": {},
-    "web": {}
+    "android": {
+      "package": "com.smartcampus.qrbasedservicesystem"
+    },
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "88901507-8a47-49cc-9f35-b95b28204171"
+      }
+    },
+    "owner": "armaaangoswami"
   }
 }

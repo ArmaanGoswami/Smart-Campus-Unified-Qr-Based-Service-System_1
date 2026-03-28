@@ -5,4 +5,5 @@ C:\PROJECTS\Smart-Campus Unified QR-Based Service System\backend\src\main\java\c
 C:\PROJECTS\Smart-Campus Unified QR-Based Service System\backend\src\main\java\com\smartcampus\model\GatePass.java
 C:\PROJECTS\Smart-Campus Unified QR-Based Service System\backend\src\main\java\com\smartcampus\repository\GatePassRepository.java
 C:\PROJECTS\Smart-Campus Unified QR-Based Service System\backend\src\main\java\com\smartcampus\service\GatePassService.java
+C:\PROJECTS\Smart-Campus Unified QR-Based Service System\backend\src\main\java\com\smartcampus\controller\GlobalExceptionHandler.java
 C:\PROJECTS\Smart-Campus Unified QR-Based Service System\backend\src\main\java\com\smartcampus\controller\GatePassController.java

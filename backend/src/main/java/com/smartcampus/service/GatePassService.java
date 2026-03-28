@@ -126,6 +126,7 @@ public class GatePassService {
     public List<GatePass> getAllPendingRequests() {
         return repository.findByStatus("Pending").stream()
             .sorted(Comparator.comparing(GatePass::getId, Comparator.nullsLast(String::compareTo)).reversed())
+            .filter(pass -> pass.getStudentId() != null)
             .collect(Collectors.toMap(
                 GatePass::getStudentId,
                 pass -> pass,
@@ -224,7 +225,7 @@ public class GatePassService {
     }
 
     public List<GatePass> getWardenHistory() {
-        Set<String> historyStatuses = Set.of("REJECTED", "USED", "EXITED", "COMPLETED");
+        Set<String> historyStatuses = Set.of("APPROVED", "REJECTED", "USED", "EXITED", "COMPLETED");
         return repository.findAll().stream()
                 .filter(pass -> historyStatuses.contains((pass.getStatus() == null ? "" : pass.getStatus()).toUpperCase()))
                 .collect(Collectors.toList());

@@ -4,6 +4,7 @@ import com.smartcampus.model.GatePass;
 import com.smartcampus.service.GatePassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/gate-pass")
-@CrossOrigin(origins = "*") // Allow calls from React Native
+@CrossOrigin(origins = "*") 
 public class GatePassController {
 
     @Autowired
@@ -20,6 +21,7 @@ public class GatePassController {
 
     // POST /api/gate-pass  -> Student applies
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<GatePass> applyForPass(@RequestBody GatePass gatePass) {
         GatePass saved = service.applyForPass(gatePass);
         return ResponseEntity.ok(saved);
@@ -27,12 +29,14 @@ public class GatePassController {
 
     // GET /api/gate-pass/pending  -> Warden views pending list
     @GetMapping("/pending")
+    @PreAuthorize("hasRole('WARDEN')")
     public ResponseEntity<List<GatePass>> getPendingRequests() {
         return ResponseEntity.ok(service.getAllPendingRequests());
     }
 
     // GET /api/gate-pass/student/{studentId}  -> Student views latest status
     @GetMapping("/student/{studentId}")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<?> getStudentLatestPass(@PathVariable String studentId) {
         Optional<GatePass> pass = service.getLatestPassByStudentId(studentId);
         if (pass.isPresent()) {
@@ -43,24 +47,28 @@ public class GatePassController {
 
     // GET /api/gate-pass/student/{studentId}/history  -> Student full audit trail
     @GetMapping("/student/{studentId}/history")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<List<GatePass>> getStudentHistory(@PathVariable String studentId) {
         return ResponseEntity.ok(service.getStudentHistory(studentId));
     }
 
     // PUT /api/gate-pass/{id}/approve  -> Warden approves
     @PutMapping("/{id}/approve")
+    @PreAuthorize("hasRole('WARDEN')")
     public ResponseEntity<GatePass> approvePass(@PathVariable String id) {
         return ResponseEntity.ok(service.approvePass(id));
     }
 
     // PUT /api/gate-pass/{id}/reject  -> Warden rejects
     @PutMapping("/{id}/reject")
+    @PreAuthorize("hasRole('WARDEN')")
     public ResponseEntity<GatePass> rejectPass(@PathVariable String id) {
         return ResponseEntity.ok(service.rejectPass(id));
     }
 
     // GET /api/gate-pass/{id}/verify  -> Guard verifies by QR scan
     @GetMapping("/{id}/verify")
+    @PreAuthorize("hasRole('GUARD')")
     public ResponseEntity<?> verifyPass(@PathVariable String id) {
         Optional<GatePass> pass = service.verifyPass(id);
         if (pass.isPresent()) {
@@ -71,12 +79,14 @@ public class GatePassController {
 
     // GET /api/gate-pass/history  -> Warden history logs
     @GetMapping("/history")
+    @PreAuthorize("hasRole('WARDEN')")
     public ResponseEntity<List<GatePass>> getWardenHistory() {
         return ResponseEntity.ok(service.getWardenHistory());
     }
 
     // GET /api/gate-pass/guard/history  -> Guard today's scans
     @GetMapping("/guard/history")
+    @PreAuthorize("hasRole('GUARD')")
     public ResponseEntity<List<GatePass>> getGuardTodayHistory() {
         return ResponseEntity.ok(service.getGuardTodayHistory());
     }
@@ -127,6 +137,7 @@ public class GatePassController {
 
     // PUT /api/gate-pass/{id}/mentor-upload  -> Student uploads mentor proof image
     @PutMapping("/{id}/mentor-upload")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<GatePass> uploadMentorProof(
             @PathVariable String id,
             @RequestBody Map<String, String> payload) {

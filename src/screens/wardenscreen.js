@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFonts } from 'expo-font';
 import {
   Poppins_400Regular,
@@ -21,31 +20,14 @@ import {
   Poppins_700Bold,
   Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
+import Svg, { Circle, Ellipse, Rect, Path, G } from 'react-native-svg';
 import { request } from '../config/api';
+import { crossAlert, crossConfirm } from '../config/utils';
 
-// Alert.alert button callbacks do not work on web, so use platform-aware confirmation
-const crossConfirm = (title, message, onConfirm) => {
-  if (Platform.OS === 'web') {
-    if (window.confirm(`${title}\n\n${message}`)) {
-      onConfirm();
-    }
-    return;
-  }
-  Alert.alert(title, message, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Confirm', onPress: onConfirm },
-  ]);
-};
-
-const PARENT_VERIFICATION_NUMBER = '9876543210';
 const TAB = { PENDING: 'PENDING', HISTORY: 'HISTORY' };
 const STATUS = {
-  PENDING: 'PENDING',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-  USED: 'USED',
-  EXITED: 'EXITED',
-  COMPLETED: 'COMPLETED',
+  PENDING: 'PENDING', APPROVED: 'APPROVED', REJECTED: 'REJECTED',
+  USED: 'USED', EXITED: 'EXITED', COMPLETED: 'COMPLETED',
 };
 
 const normalizeStatus = (value) => String(value || '').toUpperCase();
@@ -64,28 +46,71 @@ const formatDate = (value, fallbackId) => {
 
 const getStatusMeta = (status) => {
   const s = normalizeStatus(status);
-  if (s === STATUS.APPROVED) return { text: '#4ADE80', bg: 'rgba(74, 222, 128, 0.2)' };
-  if (s === STATUS.REJECTED) return { text: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' };
-  if ([STATUS.USED, STATUS.EXITED, STATUS.COMPLETED].includes(s)) return { text: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)' };
-  return { text: '#FF7A3E', bg: 'rgba(255, 195, 132, 0.25)' };
+  if (s === STATUS.APPROVED) return { text: '#1A6B3A', bg: '#D1FAE5', border: '#6EE7B7' };
+  if (s === STATUS.REJECTED) return { text: '#991B1B', bg: '#FEE2E2', border: '#FCA5A5' };
+  if ([STATUS.USED, STATUS.EXITED, STATUS.COMPLETED].includes(s))
+    return { text: '#1E40AF', bg: '#DBEAFE', border: '#93C5FD' };
+  return { text: '#1E40AF', bg: '#DBEAFE', border: '#93C5FD' };
 };
+
+// ─── Clay Warden Character ───────────────────────────────────────────────────
+function WardenCharacter() {
+  return (
+    <Svg width={80} height={80} viewBox="0 0 80 80">
+      <Ellipse cx="40" cy="76" rx="18" ry="4" fill="rgba(75,158,255,0.15)" />
+      {/* Body */}
+      <Rect x="16" y="48" width="48" height="34" rx="16" fill="#4B9EFF" />
+      {/* Badge */}
+      <Rect x="28" y="54" width="24" height="16" rx="6" fill="#fff" opacity="0.9" />
+      <Rect x="32" y="58" width="16" height="3" rx="2" fill="#2563EB" opacity="0.8" />
+      <Rect x="34" y="63" width="12" height="2" rx="1" fill="#2563EB" opacity="0.5" />
+      {/* Neck */}
+      <Rect x="32" y="40" width="16" height="12" rx="6" fill="#FDDCB0" />
+      {/* Head */}
+      <Circle cx="40" cy="30" r="22" fill="#FDDCB0" />
+      {/* Hat */}
+      <Rect x="20" y="12" width="40" height="6" rx="3" fill="#1D4ED8" />
+      <Rect x="26" y="8" width="28" height="12" rx="5" fill="#2563EB" />
+      {/* Eyes */}
+      <Circle cx="34" cy="28" r="3.5" fill="#fff" />
+      <Circle cx="46" cy="28" r="3.5" fill="#fff" />
+      <Circle cx="34.8" cy="28.8" r="2" fill="#3D2314" />
+      <Circle cx="46.8" cy="28.8" r="2" fill="#3D2314" />
+      <Circle cx="35.3" cy="28.1" r="0.85" fill="#fff" />
+      <Circle cx="47.3" cy="28.1" r="0.85" fill="#fff" />
+      {/* Mouth */}
+      <Path d="M34 38 Q40 43 46 38" stroke="#5B8FD9" strokeWidth="2" strokeLinecap="round" fill="none" />
+      {/* Cheeks */}
+      <Ellipse cx="28" cy="34" rx="4" ry="2.5" fill="#BFD9FF" opacity="0.8" />
+      <Ellipse cx="52" cy="34" rx="4" ry="2.5" fill="#BFD9FF" opacity="0.8" />
+    </Svg>
+  );
+}
+
+// ─── Clay Blob Background ─────────────────────────────────────────────────────
+function ClayBg() {
+  return (
+    <Svg style={StyleSheet.absoluteFillObject} viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice">
+      <Ellipse cx="360" cy="80"  rx="120" ry="120" fill="#C7E0FF" opacity="0.55" />
+      <Ellipse cx="20"  cy="320" rx="100" ry="100" fill="#D6EAFF" opacity="0.5"  />
+      <Ellipse cx="380" cy="680" rx="110" ry="110" fill="#BDD9FF" opacity="0.4"  />
+    </Svg>
+  );
+}
 
 export default function WardenScreen({ navigation }) {
   const [fontsLoaded, fontError] = useFonts({
-    Poppins_400Regular,
-    Poppins_500Medium,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-    Poppins_800ExtraBold,
+    Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold,
+    Poppins_700Bold, Poppins_800ExtraBold,
   });
 
-  const [requests, setRequests] = useState([]);
+  const [requests,    setRequests]    = useState([]);
   const [historyLogs, setHistoryLogs] = useState([]);
   const [loadingPend, setLoadingPend] = useState(false);
   const [loadingHist, setLoadingHist] = useState(false);
-  const [actionId, setActionId] = useState('');
-  const [activeTab, setActiveTab] = useState(TAB.PENDING);
-  const [searchText, setSearchText] = useState('');
+  const [actionId,    setActionId]    = useState('');
+  const [activeTab,   setActiveTab]   = useState(TAB.PENDING);
+  const [searchText,  setSearchText]  = useState('');
 
   const fetchPending = useCallback(async () => {
     try {
@@ -93,7 +118,7 @@ export default function WardenScreen({ navigation }) {
       const data = await request('/pending', { method: 'GET' });
       setRequests(Array.isArray(data) ? data : []);
     } catch (e) {
-      Alert.alert('API Error', e?.message || 'Unable to load pending requests.');
+      crossAlert('API Error', e?.message || 'Unable to load pending requests.');
     } finally {
       setLoadingPend(false);
     }
@@ -105,39 +130,28 @@ export default function WardenScreen({ navigation }) {
       const data = await request('/history', { method: 'GET' });
       setHistoryLogs(Array.isArray(data) ? data : []);
     } catch (e) {
-      Alert.alert('API Error', e?.message || 'Unable to load history logs.');
+      crossAlert('API Error', e?.message || 'Unable to load history logs.');
     } finally {
       setLoadingHist(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchPending();
-    fetchHistory();
-  }, [fetchHistory, fetchPending]);
+  useEffect(() => { fetchPending(); fetchHistory(); }, [fetchHistory, fetchPending]);
 
   const refreshTab = useCallback(async () => {
-    if (activeTab === TAB.PENDING) {
-      await fetchPending();
-      return;
-    }
+    if (activeTab === TAB.PENDING) { await fetchPending(); return; }
     await fetchHistory();
   }, [activeTab, fetchHistory, fetchPending]);
 
   const withAction = async (id, fn, successMessage) => {
-    if (!id) {
-      Alert.alert('Missing ID', 'Request ID is missing.');
-      return;
-    }
+    if (!id) { crossAlert('Missing ID', 'Request ID is missing.'); return; }
     try {
       setActionId(id);
       await fn();
       await Promise.all([fetchPending(), fetchHistory()]);
-      if (successMessage) {
-        Alert.alert('Updated', successMessage);
-      }
+      if (successMessage) crossAlert('Updated', successMessage);
     } catch (e) {
-      Alert.alert('API Error', e?.message || 'Action failed.');
+      crossAlert('API Error', e?.message || 'Action failed.');
     } finally {
       setActionId('');
     }
@@ -146,57 +160,45 @@ export default function WardenScreen({ navigation }) {
   const confirmApprove = (item) => {
     const parentStatus = normalizeStatus(item?.parentApprovalStatus || 'PENDING');
     const mentorStatus = normalizeStatus(item?.mentorStatus || 'NONE');
-    const mentorNeeded = !!item?.mentorRequired || ['REQUESTED', 'SUBMITTED'].includes(mentorStatus);
-
+    const mentorNeeded = !!item?.mentorRequired || ['REQUESTED', 'SUBMITTED', 'APPLICABLE', 'NOT_APPLICABLE'].includes(mentorStatus);
     if (parentStatus !== 'APPROVED') {
-      Alert.alert('Parent Approval Mandatory', 'Please approve parent verification first (Call Verified or WhatsApp Verified).');
+      crossAlert('Parent Approval Mandatory', 'Please approve parent verification first.');
       return;
     }
-
     if (mentorNeeded && mentorStatus !== 'APPLICABLE') {
-      Alert.alert('Mentor Review Pending', 'Mentor proof is currently in SUBMITTED/REQUESTED state. Please approve or reject first.');
+      crossAlert('Mentor Review Pending', 'Mentor proof is currently pending. Please approve or reject first.');
       return;
     }
-
-    crossConfirm(
-      'Approve Pass',
-      'Is gate pass request ko approve karein?',
-      () => withAction(getPassId(item), () => request(`/${getPassId(item)}/approve`, { method: 'PUT' }), 'Gate pass approved successfully.')
+    crossConfirm('Approve Pass', 'Approve this gate pass request?',
+      () => withAction(getPassId(item), () => request(`/${getPassId(item)}/approve`, { method: 'PUT' }), 'Gate pass approved.')
     );
   };
 
-  const confirmReject = (item) => {
-    crossConfirm(
-      'Reject Pass',
-      'Reject this request? This action cannot be reversed.',
-      () => withAction(getPassId(item), () => request(`/${getPassId(item)}/reject`, { method: 'PUT' }), 'Request was rejected.')
+  const confirmReject = (item) =>
+    crossConfirm('Reject Pass', 'Reject this request? Cannot be undone.',
+      () => withAction(getPassId(item), () => request(`/${getPassId(item)}/reject`, { method: 'PUT' }), 'Request rejected.')
     );
-  };
 
   const handleParentReview = (item, approved, mode) =>
-    withAction(
-      getPassId(item),
+    withAction(getPassId(item),
       () => request(`/${getPassId(item)}/parent-review?approved=${approved}&mode=${mode}`, { method: 'PUT' }),
-      approved ? `Parent verification marked via ${mode}.` : 'Parent verification marked not verified.'
+      approved ? `Parent verification marked via ${mode}.` : 'Parent marked not verified.'
     );
 
   const handleSetMentorRequirement = (item, required) =>
-    withAction(
-      getPassId(item),
+    withAction(getPassId(item),
       () => request(`/${getPassId(item)}/mentor-requirement?required=${required}`, { method: 'PUT' }),
-      required ? 'Mentor proof has been marked as required.' : 'Mentor proof requirement has been removed.'
+      required ? 'Mentor proof marked required.' : 'Mentor proof requirement removed.'
     );
 
   const handleMentorRequest = (item) =>
-    withAction(
-      getPassId(item),
+    withAction(getPassId(item),
       () => request(`/${getPassId(item)}/mentor-request`, { method: 'PUT' }),
-      'A mentor proof upload request was sent to the student.'
+      'Mentor proof upload request sent to student.'
     );
 
   const handleMentorReview = (item, applicable) =>
-    withAction(
-      getPassId(item),
+    withAction(getPassId(item),
       () => request(`/${getPassId(item)}/mentor-review?applicable=${applicable}`, { method: 'PUT' }),
       applicable ? 'Mentor proof approved.' : 'Mentor proof rejected.'
     );
@@ -207,381 +209,462 @@ export default function WardenScreen({ navigation }) {
     if (!q) return source;
     return source.filter((item) =>
       [item?.studentName, item?.studentId, item?.reason, item?.outTime, item?.status]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
+        .filter(Boolean).join(' ').toLowerCase().includes(q)
     );
   }, [activeTab, historyLogs, requests, searchText]);
 
-  const stats = useMemo(() => ({
-    pending: requests.length,
-    approved: historyLogs.filter((i) => normalizeStatus(i?.status) === STATUS.APPROVED).length,
-    rejected: historyLogs.filter((i) => normalizeStatus(i?.status) === STATUS.REJECTED).length,
-  }), [historyLogs, requests]);
+  const stats = useMemo(() => {
+    const allRows = [...requests, ...historyLogs];
+    return {
+      pending:  requests.length,
+      approved: allRows.filter((i) => normalizeStatus(i?.status) === STATUS.APPROVED).length,
+      rejected: allRows.filter((i) => normalizeStatus(i?.status) === STATUS.REJECTED).length,
+    };
+  }, [historyLogs, requests]);
 
-  const renderActionButton = (label, variant, onPress, disabled) => (
+  // ─── Clay Action Button ────────────────────────────────────────────────────
+  const ClayBtn = ({ label, color, textColor, onPress, disabled }) => (
     <TouchableOpacity
-      activeOpacity={0.8}
-      style={[styles.actionButton, styles[variant], disabled && styles.actionDisabled]}
-      onPress={onPress}
+      activeOpacity={0.82}
       disabled={disabled}
+      onPress={onPress}
+      style={[
+        styles.clayBtn,
+        { backgroundColor: color || '#FF8C42', borderColor: lighten(color) },
+        disabled && styles.clayBtnDisabled,
+      ]}
     >
-      <Text style={styles.actionButtonText}>{label}</Text>
+      <Text style={[styles.clayBtnText, textColor && { color: textColor }]}>{label}</Text>
     </TouchableOpacity>
   );
 
+  const lighten = (hex) => {
+    if (!hex) return '#FFB880';
+    const map = {
+      '#FF8C42': '#FFB880', '#4ADE80': '#86EFAC', '#EF4444': '#FCA5A5',
+      '#3B82F6': '#93C5FD', '#F5A623': '#FCD34D', '#E5E7EB': '#F3F4F6',
+      '#FFFFFF': '#F3F4F6',
+    };
+    return map[hex] || '#FFD6B8';
+  };
+
   if (!fontsLoaded && !fontError) {
     return (
-      <View style={[styles.screen, styles.loadingWrap]}>
-        <ActivityIndicator size="large" color="#FF7A3E" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
+      <View style={[styles.screen, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#FF8C42" />
+        <Text style={{ color: '#FF8C42', fontWeight: '700', marginTop: 10 }}>Loading dashboard…</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.screen}>
-      <LinearGradient 
-        colors={['#FFF1DD', '#FFEBE3', '#FF9A58', '#FF7A3E']} 
-        start={{ x: 0.2, y: 0 }} 
-        end={{ x: 1, y: 1.2 }}
-        style={styles.backgroundGradient}
-      />
-      <LinearGradient
-        colors={['#FF9C5E', '#FF8C42', '#FF7A3E']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View>
+      <ClayBg />
+
+      {/* ── Header ── */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
           <Text style={styles.headerBrand}>Smart Campus</Text>
           <Text style={styles.headerTitle}>Warden Dashboard</Text>
-          <Text style={styles.headerSub}>Review and manage all gate pass requests</Text>
+          <Text style={styles.headerSub}>Manage gate pass requests</Text>
         </View>
-        <View style={styles.pendingBadge}>
-          <Text style={styles.pendingBadgeNum}>{stats.pending}</Text>
-          <Text style={styles.pendingBadgeLbl}>Pending</Text>
+        <View style={styles.headerRight}>
+          <WardenCharacter />
+          <View style={styles.pendingBadge}>
+            <Text style={styles.pendingBadgeNum}>{stats.pending}</Text>
+            <Text style={styles.pendingBadgeLbl}>Pending</Text>
+          </View>
         </View>
-      </LinearGradient>
+      </View>
 
       <View style={styles.contentWrap}>
+        {/* ── Stats Row ── */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, styles.statOrange]}>
-            <Text style={styles.statLbl}>Pending</Text>
-            <Text style={styles.statNum}>{stats.pending}</Text>
-          </View>
-          <View style={[styles.statCard, styles.statGreen]}>
-            <Text style={styles.statLbl}>Approved</Text>
-            <Text style={styles.statNum}>{stats.approved}</Text>
-          </View>
-          <View style={[styles.statCard, styles.statRed]}>
-            <Text style={styles.statLbl}>Rejected</Text>
-            <Text style={styles.statNum}>{stats.rejected}</Text>
-          </View>
+          {[
+            { label: 'Pending',  val: stats.pending,  bg: '#FEF3C7', border: '#FCD34D', tc: '#92400E' },
+            { label: 'Approved', val: stats.approved, bg: '#D1FAE5', border: '#6EE7B7', tc: '#064E3B' },
+            { label: 'Rejected', val: stats.rejected, bg: '#FEE2E2', border: '#FCA5A5', tc: '#7F1D1D' },
+          ].map((s) => (
+            <View key={s.label} style={[styles.statCard, { backgroundColor: s.bg, borderColor: s.border }]}>
+              <Text style={[styles.statLbl, { color: s.tc }]}>{s.label}</Text>
+              <Text style={[styles.statNum, { color: s.tc }]}>{s.val}</Text>
+            </View>
+          ))}
         </View>
 
+        {/* ── Toolbar ── */}
         <View style={styles.toolbarCard}>
           <View style={styles.tabRow}>
-            {renderActionButton('Pending', activeTab === TAB.PENDING ? 'tabActive' : 'tabInactive', () => setActiveTab(TAB.PENDING), false)}
-            {renderActionButton('History', activeTab === TAB.HISTORY ? 'tabActive' : 'tabInactive', () => setActiveTab(TAB.HISTORY), false)}
+            {[TAB.PENDING, TAB.HISTORY].map((t) => (
+              <TouchableOpacity
+                key={t}
+                activeOpacity={0.82}
+                style={[styles.tabBtn, activeTab === t && styles.tabBtnActive]}
+                onPress={() => setActiveTab(t)}
+              >
+                <Text style={[styles.tabBtnText, activeTab === t && styles.tabBtnTextActive]}>
+                  {t === TAB.PENDING ? '⏳ Pending' : '📋 History'}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
           <View style={styles.searchRow}>
             <TextInput
               style={styles.searchInput}
               value={searchText}
               onChangeText={setSearchText}
-              placeholder="Search by name, reason, id..."
-              placeholderTextColor="#AAA"
+              placeholder="Search by name, reason, id…"
+              placeholderTextColor="#C4907A"
             />
-            {renderActionButton('Refresh', 'refreshAction', refreshTab, activeTab === TAB.PENDING ? loadingPend : loadingHist)}
+            <TouchableOpacity
+              style={[styles.refreshBtn, (activeTab === TAB.PENDING ? loadingPend : loadingHist) && { opacity: 0.6 }]}
+              onPress={refreshTab}
+              disabled={activeTab === TAB.PENDING ? loadingPend : loadingHist}
+              activeOpacity={0.82}
+            >
+              <Text style={styles.refreshBtnText}>↻</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
+        {/* ── Request List ── */}
         <ScrollView
           style={styles.listArea}
           contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={activeTab === TAB.PENDING ? loadingPend : loadingHist} onRefresh={refreshTab} tintColor="#CF202E" />}
+          refreshControl={
+            <RefreshControl
+              refreshing={activeTab === TAB.PENDING ? loadingPend : loadingHist}
+              onRefresh={refreshTab}
+              tintColor="#FF8C42"
+            />
+          }
+          showsVerticalScrollIndicator={false}
         >
           {filteredData.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyTitle}>{activeTab === TAB.PENDING ? 'No pending requests' : 'No history logs'}</Text>
-              <Text style={styles.emptyTxt}>No records available right now.</Text>
+              <Text style={styles.emptyIcon}>{activeTab === TAB.PENDING ? '⏰' : '📂'}</Text>
+              <Text style={styles.emptyTitle}>
+                {activeTab === TAB.PENDING ? 'No pending requests' : 'No history logs'}
+              </Text>
+              <Text style={styles.emptyTxt}>Nothing to show right now.</Text>
             </View>
           ) : (
             filteredData.map((item, index) => {
               const id = getPassId(item) || `row-${index}`;
               const isBusy = actionId === id;
-              const statusMeta = getStatusMeta(item?.status);
-              const mentorStatus = normalizeStatus(item?.mentorStatus || 'NONE');
-              const mentorNeeded = !!item?.mentorRequired || ['REQUESTED', 'SUBMITTED', 'APPLICABLE', 'NOT_APPLICABLE'].includes(mentorStatus);
-              const parentStatus = normalizeStatus(item?.parentApprovalStatus || 'PENDING');
-              const parentMode = normalizeStatus(item?.parentApprovalMode || 'NONE');
+              const sm = getStatusMeta(item?.status);
+              const mentorStatus  = normalizeStatus(item?.mentorStatus || 'NONE');
+              const mentorNeeded  = !!item?.mentorRequired || ['REQUESTED', 'SUBMITTED', 'APPLICABLE', 'NOT_APPLICABLE'].includes(mentorStatus);
+              const parentStatus  = normalizeStatus(item?.parentApprovalStatus || 'PENDING');
+              const parentMode    = normalizeStatus(item?.parentApprovalMode || 'NONE');
               const mentorProofImage = String(item?.mentorProofImage || '').trim();
 
               return (
                 <View key={id} style={styles.card}>
+                  {/* Card header */}
                   <View style={styles.cardTopRow}>
                     <View style={{ flex: 1, marginRight: 8 }}>
-                      <Text style={styles.studentName}>{item?.studentName || item?.studentId || 'Unknown Student'}</Text>
-                      <Text style={styles.studentId}>ID: {item?.studentId || 'N/A'}</Text>
+                      <Text style={[styles.studentName, { fontFamily: 'Poppins_800ExtraBold' }]}>
+                        {item?.studentName || item?.studentId || 'Unknown Student'}
+                      </Text>
+                      <Text style={[styles.studentId, { fontFamily: 'Poppins_600SemiBold' }]}>
+                        ID: {item?.studentId || 'N/A'}
+                      </Text>
                     </View>
-                    <View style={[styles.statusChip, { backgroundColor: statusMeta.bg }]}>
-                      <Text style={[styles.statusChipText, { color: statusMeta.text }]}>{normalizeStatus(item?.status) || 'N/A'}</Text>
+                    <View style={[styles.statusChip, { backgroundColor: sm.bg, borderColor: sm.border }]}>
+                      <Text style={[styles.statusChipText, { color: sm.text, fontFamily: 'Poppins_700Bold' }]}>
+                        {normalizeStatus(item?.status) || 'N/A'}
+                      </Text>
                     </View>
                   </View>
 
-                  <Text style={styles.detailLabel}>Reason</Text>
-                  <Text style={styles.detailValue}>{item?.reason || 'No reason provided'}</Text>
+                  <Text style={[styles.detailLabel, { fontFamily: 'Poppins_700Bold' }]}>Reason</Text>
+                  <Text style={[styles.detailValue, { fontFamily: 'Poppins_500Medium' }]}>
+                    {item?.reason || 'No reason provided'}
+                  </Text>
 
-                  <View style={styles.parentSection}>
-                    <Text style={styles.sectionTitle}>Parent Consent</Text>
-                    <Text style={styles.infoText}>Verify on parent desk number: {PARENT_VERIFICATION_NUMBER}</Text>
-                    <Text style={styles.infoText}>{item?.parentConsentNote || 'Parent note missing'}</Text>
-                    <Text style={styles.infoStrong}>Status: {parentStatus}{parentMode !== 'NONE' ? ` (${parentMode})` : ''}</Text>
+                  {/* Parent Section */}
+                  <View style={styles.subCard}>
+                    <Text style={[styles.subCardTitle, { fontFamily: 'Poppins_800ExtraBold' }]}>👨‍👩‍👧 Parent Consent</Text>
+                    <Text style={[styles.infoText, { fontFamily: 'Poppins_500Medium' }]}>
+                      {item?.parentConsentNote || 'Parent note missing'}
+                    </Text>
+                    <Text style={[styles.infoStrong, { fontFamily: 'Poppins_700Bold' }]}>
+                      Status: {parentStatus}{parentMode !== 'NONE' ? ` (${parentMode})` : ''}
+                    </Text>
                     {activeTab === TAB.PENDING && (
-                      <View style={styles.buttonRowWrap}>
-                        {renderActionButton('Not Verified', 'neutralAction', () => handleParentReview(item, false, 'NONE'), isBusy)}
-                        {renderActionButton('Call Verified', 'successAction', () => handleParentReview(item, true, 'CALL'), isBusy)}
-                        {renderActionButton('WhatsApp Verified', 'successAction', () => handleParentReview(item, true, 'WHATSAPP'), isBusy)}
+                      <View style={styles.btnRow}>
+                        <ClayBtn 
+                          label="Not Verified" 
+                          color="#E5E7EB" 
+                          textColor="#6B7280" 
+                          onPress={() => handleParentReview(item, false, 'NONE')} 
+                          disabled={isBusy || parentStatus === 'REJECTED'} 
+                        />
+                        <ClayBtn 
+                          label={parentStatus === 'APPROVED' && parentMode === 'CALL' ? "Call ✓" : "Call"} 
+                          color={parentStatus === 'APPROVED' && parentMode === 'CALL' ? "#4ADE80" : "#3B82F6"} 
+                          onPress={() => handleParentReview(item, true, 'CALL')} 
+                          disabled={isBusy || parentStatus === 'APPROVED'} 
+                        />
+                        <ClayBtn 
+                          label={parentStatus === 'APPROVED' && parentMode === 'WHATSAPP' ? "WA ✓" : "WA"} 
+                          color={parentStatus === 'APPROVED' && parentMode === 'WHATSAPP' ? "#4ADE80" : "#3B82F6"} 
+                          onPress={() => handleParentReview(item, true, 'WHATSAPP')} 
+                          disabled={isBusy || parentStatus === 'APPROVED'} 
+                        />
                       </View>
                     )}
                   </View>
 
-                  <View style={styles.mentorSection}>
-                    <Text style={styles.sectionTitle}>Mentor Application</Text>
-                    <Text style={styles.infoStrong}>Required: {mentorNeeded ? 'Yes' : 'No'}</Text>
-
-                    {/* Clear status badge */}
+                  {/* Mentor Section */}
+                  <View style={styles.subCard}>
+                    <Text style={[styles.subCardTitle, { fontFamily: 'Poppins_800ExtraBold' }]}>📄 Mentor Application</Text>
+                    <Text style={[styles.infoStrong, { fontFamily: 'Poppins_700Bold' }]}>
+                      Required: {mentorNeeded ? 'Yes' : 'No'}
+                    </Text>
                     {mentorStatus === 'APPLICABLE' && (
-                      <View style={styles.mentorApprovedBadge}>
-                        <Text style={styles.mentorApprovedText}>✓ Mentor Proof APPROVED</Text>
+                      <View style={styles.approvedBadge}>
+                        <Text style={[styles.approvedBadgeText, { fontFamily: 'Poppins_700Bold' }]}>✓ Mentor Proof APPROVED</Text>
                       </View>
                     )}
                     {mentorStatus === 'NOT_APPLICABLE' && (
-                      <View style={styles.mentorRejectedBadge}>
-                        <Text style={styles.mentorRejectedText}>✗ Mentor Proof REJECTED</Text>
+                      <View style={styles.rejectedBadge}>
+                        <Text style={[styles.rejectedBadgeText, { fontFamily: 'Poppins_700Bold' }]}>✗ Mentor Proof REJECTED</Text>
                       </View>
                     )}
                     {mentorStatus !== 'APPLICABLE' && mentorStatus !== 'NOT_APPLICABLE' && (
-                      <Text style={styles.infoText}>
+                      <Text style={[styles.infoText, { fontFamily: 'Poppins_500Medium' }]}>
                         {mentorStatus === 'REQUESTED'
-                          ? 'A mentor proof upload request was sent to the student. You can also approve directly.'
+                          ? 'Upload request sent to student.'
                           : mentorStatus === 'SUBMITTED'
-                            ? 'The student has uploaded mentor proof. Please approve or reject.'
-                            : 'Mentor proof is either not required yet or has not been uploaded.'}
+                          ? 'Student uploaded proof. Please review.'
+                          : 'Mentor proof not yet uploaded.'}
                       </Text>
                     )}
-
                     {!!mentorProofImage && (
-                      <TouchableOpacity onPress={() => Linking.openURL(mentorProofImage)} style={styles.mentorImageLink}>
-                        <Text style={styles.mentorImageLinkText}>📎 View Mentor Proof Image</Text>
-                        <Text style={styles.mentorImageLinkUrl} numberOfLines={1}>{mentorProofImage}</Text>
+                      <TouchableOpacity onPress={() => Linking.openURL(mentorProofImage)} style={styles.proofLink}>
+                        <Text style={[styles.proofLinkText, { fontFamily: 'Poppins_600SemiBold' }]}>📎 View Mentor Proof</Text>
                       </TouchableOpacity>
                     )}
-
                     {activeTab === TAB.PENDING && (
-                      <View style={styles.buttonRowWrap}>
-                        {!mentorNeeded && renderActionButton('Mentor Needed', 'primaryAction', () => handleSetMentorRequirement(item, true), isBusy)}
-                        {mentorNeeded && mentorStatus !== 'APPLICABLE' && renderActionButton('No Mentor Needed', 'neutralAction', () => handleSetMentorRequirement(item, false), isBusy)}
-                        {mentorNeeded && mentorStatus === 'NONE' && renderActionButton('Ask Mentor Photo', 'primaryAction', () => handleMentorRequest(item), isBusy)}
-                        {mentorNeeded && mentorStatus === 'REQUESTED' && renderActionButton('Approve Without Photo', 'successAction', () => handleMentorReview(item, true), isBusy)}
-                        {(mentorStatus === 'SUBMITTED' || (!!mentorProofImage && mentorStatus !== 'APPLICABLE' && mentorStatus !== 'NOT_APPLICABLE')) && renderActionButton('Reject Mentor Proof', 'neutralAction', () => handleMentorReview(item, false), isBusy)}
-                        {(mentorStatus === 'SUBMITTED' || (!!mentorProofImage && mentorStatus !== 'APPLICABLE' && mentorStatus !== 'NOT_APPLICABLE')) && renderActionButton('Approve Mentor Proof', 'successAction', () => handleMentorReview(item, true), isBusy)}
+                      <View style={styles.btnRow}>
+                        {!mentorNeeded && <ClayBtn label="Mentor Needed" color="#FF8C42" onPress={() => handleSetMentorRequirement(item, true)} disabled={isBusy} />}
+                        {mentorNeeded && mentorStatus !== 'APPLICABLE' && <ClayBtn label="No Mentor" color="#E5E7EB" textColor="#6B7280" onPress={() => handleSetMentorRequirement(item, false)} disabled={isBusy} />}
+                        {mentorNeeded && mentorStatus === 'NONE' && <ClayBtn label="Ask Photo" color="#FF8C42" onPress={() => handleMentorRequest(item)} disabled={isBusy} />}
+                        {mentorNeeded && mentorStatus === 'REQUESTED' && <ClayBtn label="Approve Direct" color="#4ADE80" onPress={() => handleMentorReview(item, true)} disabled={isBusy} />}
+                        {(mentorStatus === 'SUBMITTED' || (!!mentorProofImage && !['APPLICABLE', 'NOT_APPLICABLE'].includes(mentorStatus))) && (
+                          <>
+                            <ClayBtn label="Reject Proof" color="#E5E7EB" textColor="#991B1B" onPress={() => handleMentorReview(item, false)} disabled={isBusy} />
+                            <ClayBtn label="Approve Proof" color="#4ADE80" onPress={() => handleMentorReview(item, true)} disabled={isBusy} />
+                          </>
+                        )}
                       </View>
                     )}
                   </View>
 
+                  {/* Meta Row */}
                   <View style={styles.metaRow}>
                     <View style={styles.metaPill}>
-                      <Text style={styles.metaKey}>Out Time</Text>
-                      <Text style={styles.metaVal}>{item?.outTime || 'N/A'}</Text>
+                      <Text style={[styles.metaKey, { fontFamily: 'Poppins_700Bold' }]}>Out Time</Text>
+                      <Text style={[styles.metaVal, { fontFamily: 'Poppins_500Medium' }]}>{item?.outTime || 'N/A'}</Text>
                     </View>
                     <View style={[styles.metaPill, { marginRight: 0 }]}>
-                      <Text style={styles.metaKey}>Updated</Text>
-                      <Text style={styles.metaVal}>{formatDate(item?.updatedAt || item?.createdAt, id)}</Text>
+                      <Text style={[styles.metaKey, { fontFamily: 'Poppins_700Bold' }]}>Updated</Text>
+                      <Text style={[styles.metaVal, { fontFamily: 'Poppins_500Medium' }]}>{formatDate(item?.updatedAt || item?.createdAt, id)}</Text>
                     </View>
                   </View>
 
                   {activeTab === TAB.PENDING && (
-                    <View style={styles.buttonRowWrap}>
-                      {renderActionButton('Reject', 'dangerAction', () => confirmReject(item), isBusy)}
-                      {renderActionButton('Approve', 'approveAction', () => confirmApprove(item), isBusy)}
+                    <View style={styles.btnRow}>
+                      <ClayBtn label="✗ Reject" color="#EF4444" onPress={() => confirmReject(item)} disabled={isBusy} />
+                      <ClayBtn label="✓ Approve" color="#3B82F6" onPress={() => confirmApprove(item)} disabled={isBusy} />
                     </View>
                   )}
                 </View>
               );
             })
           )}
-        </ScrollView>
 
-        {renderActionButton('Logout', 'logoutAction', () => navigation.replace('Login'), false)}
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            activeOpacity={0.85}
+            onPress={() => navigation.replace('Login')}
+          >
+            <Text style={[styles.logoutBtnText, { fontFamily: 'Poppins_800ExtraBold' }]}>Logout</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#000000' },
-  loadingWrap: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 10,
-    color: '#FF7A3E',
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 14,
-  },
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
+  screen: { flex: 1, backgroundColor: '#EEF6FF' },
+
+  // Header
   header: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    paddingHorizontal: 18,
-    paddingTop: 18,
+    backgroundColor: '#4B9EFF',
+    paddingTop: Platform.OS === 'android' ? 42 : 54,
     paddingBottom: 18,
+    paddingHorizontal: 18,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 9,
-    zIndex: 3,
+    shadowColor: '#1D4ED8',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 14,
   },
-  headerBrand: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 11, letterSpacing: 0.5, marginBottom: 4, fontFamily: 'Poppins_700Bold' },
-  headerTitle: { color: '#FFFFFF', fontSize: 23, letterSpacing: 0.2, fontFamily: 'Poppins_800ExtraBold' },
-  headerSub: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 13, marginTop: 4, maxWidth: 240, lineHeight: 18, fontFamily: 'Poppins_500Medium' },
+  headerLeft: { flex: 1 },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerBrand: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 3 },
+  headerTitle: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
+  headerSub: { color: 'rgba(255,255,255,0.85)', fontSize: 12, fontWeight: '600', marginTop: 4, maxWidth: 220 },
   pendingBadge: {
-    minWidth: 72,
-    height: 72,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.28)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    backdropFilter: 'blur(10px)',
+    minWidth: 64, height: 64, borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.28)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#fff', shadowOpacity: 0.15, shadowRadius: 8,
   },
-  pendingBadgeNum: { fontSize: 24, color: '#FFFFFF', lineHeight: 26, fontFamily: 'Poppins_800ExtraBold' },
-  pendingBadgeLbl: { fontSize: 11, color: '#FFFFFF', fontFamily: 'Poppins_700Bold' },
-  contentWrap: { flex: 1, padding: 13, paddingTop: 11, zIndex: 2 },
-  statsRow: { flexDirection: 'row', marginBottom: 10, justifyContent: 'space-between' },
-  statCard: { flex: 1, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 10, marginHorizontal: 3, borderWidth: 1.2 },
-  statOrange: { backgroundColor: 'rgba(255, 195, 132, 0.25)', borderColor: 'rgba(255, 188, 120, 0.35)' },
-  statGreen: { backgroundColor: 'rgba(74, 222, 128, 0.18)', borderColor: 'rgba(132, 204, 22, 0.3)' },
-  statRed: { backgroundColor: 'rgba(248, 113, 113, 0.15)', borderColor: 'rgba(239, 68, 68, 0.25)' },
-  statLbl: { color: '#6B6B6B', fontSize: 11, fontFamily: 'Poppins_700Bold' },
-  statNum: { color: '#1A1A1A', fontSize: 22, marginTop: 2, fontFamily: 'Poppins_800ExtraBold' },
-  toolbarCard: { backgroundColor: 'rgba(255, 255, 255, 0.54)', borderRadius: 14, padding: 12, borderWidth: 1.2, borderColor: 'rgba(255, 255, 255, 0.6)', marginBottom: 10, backdropFilter: 'blur(12px)' },
-  tabRow: { flexDirection: 'row', marginBottom: 10 },
-  searchRow: { flexDirection: 'row', alignItems: 'center' },
+  pendingBadgeNum: { fontSize: 22, fontWeight: '900', color: '#fff' },
+  pendingBadgeLbl: { fontSize: 10, fontWeight: '800', color: '#fff', opacity: 0.9 },
+
+  // Content
+  contentWrap: { flex: 1, padding: 12, paddingTop: 10 },
+
+  // Stats
+  statsRow: { flexDirection: 'row', marginBottom: 10, gap: 8 },
+  statCard: {
+    flex: 1, borderRadius: 20, paddingVertical: 10, paddingHorizontal: 10,
+    borderWidth: 2.5,
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.18, shadowRadius: 10, elevation: 6,
+  },
+  statLbl: { fontSize: 11, fontWeight: '800' },
+  statNum: { fontSize: 24, fontWeight: '900', marginTop: 2 },
+
+  // Toolbar
+  toolbarCard: {
+    backgroundColor: '#FFFFFF', borderRadius: 22, borderWidth: 3, borderColor: '#BFDBFE',
+    padding: 12,
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 7,
+    marginBottom: 10,
+  },
+  tabRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  tabBtn: {
+    flex: 1, paddingVertical: 10, borderRadius: 16,
+    backgroundColor: '#F0F7FF', borderWidth: 2.5, borderColor: '#BFDBFE',
+    alignItems: 'center',
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3,
+  },
+  tabBtnActive: { backgroundColor: '#3B82F6', borderColor: '#2563EB' },
+  tabBtnText: { fontSize: 13, fontWeight: '800', color: '#64A4D8' },
+  tabBtnTextActive: { color: '#fff' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   searchInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.46)',
-    borderRadius: 10,
-    borderWidth: 1.2,
-    borderColor: 'rgba(255, 188, 120, 0.28)',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: '#1A1A1A',
-    fontSize: 15,
-    marginRight: 8,
-    backdropFilter: 'blur(8px)',
+    flex: 1, backgroundColor: '#F5F9FF', borderRadius: 16, borderWidth: 2.5,
+    borderColor: '#BFDBFE', paddingHorizontal: 14, paddingVertical: 10,
+    color: '#1E3A5F', fontSize: 14,
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 2,
     fontFamily: 'Poppins_500Medium',
   },
+  refreshBtn: {
+    width: 44, height: 44, borderRadius: 14, backgroundColor: '#3B82F6',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#1D4ED8', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 7,
+    borderWidth: 2, borderColor: '#60A5FA',
+  },
+  refreshBtnText: { color: '#fff', fontSize: 22, fontWeight: '900' },
+
+  // List
   listArea: { flex: 1 },
-  listContent: { paddingBottom: 10 },
+  listContent: { paddingBottom: 16 },
+
+  // Card
   card: {
-    backgroundColor: 'rgba(255, 255, 255, 0.54)',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.6)',
-    padding: 14,
-    marginBottom: 10,
-    backdropFilter: 'blur(12px)',
-    shadowColor: 'rgba(255, 122, 62, 0.3)',
-    shadowOpacity: 0.2,
-    shadowRadius: 14,
+    backgroundColor: '#FFFFFF', borderRadius: 26, borderWidth: 3, borderColor: '#BFDBFE',
+    padding: 14, marginBottom: 12,
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.18, shadowRadius: 14, elevation: 9,
   },
   cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  studentName: { color: '#151515', fontSize: 17, marginBottom: 2, fontFamily: 'Poppins_800ExtraBold', letterSpacing: 0.2 },
-  studentId: { color: '#666666', fontSize: 12, fontFamily: 'Poppins_600SemiBold' },
-  statusChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 0.8, borderColor: 'rgba(255, 188, 120, 0.3)' },
-  statusChipText: { fontSize: 11, fontFamily: 'Poppins_700Bold' },
-  detailLabel: { fontSize: 11, color: '#E7672E', marginBottom: 2, fontFamily: 'Poppins_700Bold' },
-  detailValue: { fontSize: 14, color: '#151515', marginBottom: 8, lineHeight: 20, fontFamily: 'Poppins_500Medium' },
-  sectionTitle: { color: '#E7672E', fontSize: 14, marginBottom: 8, fontFamily: 'Poppins_800ExtraBold', letterSpacing: 0.2 },
-  parentSection: { backgroundColor: 'rgba(255, 255, 255, 0.32)', borderWidth: 1.3, borderColor: 'rgba(255, 122, 62, 0.35)', borderRadius: 12, padding: 10, marginBottom: 8, backdropFilter: 'blur(8px)' },
-  mentorSection: { backgroundColor: 'rgba(255, 255, 255, 0.32)', borderWidth: 1.3, borderColor: 'rgba(255, 122, 62, 0.35)', borderRadius: 12, padding: 10, marginBottom: 8, backdropFilter: 'blur(8px)' },
-  infoText: { color: '#3F3F3F', fontSize: 14, lineHeight: 20, marginBottom: 4, fontFamily: 'Poppins_500Medium' },
-  infoStrong: { color: '#D95F2A', fontSize: 12, marginBottom: 4, fontFamily: 'Poppins_700Bold' },
-  mentorImageLink: {
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginTop: 10,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255, 122, 62, 0.15)',
-    borderRadius: 12,
-    borderWidth: 1.2,
-    borderColor: 'rgba(255, 188, 120, 0.3)',
+  studentName: { color: '#1E3A5F', fontSize: 16, marginBottom: 2 },
+  studentId: { color: '#64A4D8', fontSize: 12 },
+  statusChip: {
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6,
+    borderWidth: 2,
   },
-  mentorImageLinkText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FF7A3E',
-    marginBottom: 6,
-    fontFamily: 'Poppins_600SemiBold',
+  statusChipText: { fontSize: 11 },
+  detailLabel: { fontSize: 11, color: '#3B82F6', marginBottom: 2 },
+  detailValue: { fontSize: 14, color: '#1E3A5F', marginBottom: 8, lineHeight: 20 },
+
+  // Sub-cards within a card
+  subCard: {
+    backgroundColor: '#F0F7FF', borderRadius: 18, borderWidth: 2.5, borderColor: '#BFDBFE',
+    padding: 12, marginBottom: 8,
   },
-  mentorImageLinkUrl: {
-    fontSize: 11,
-    color: '#999999',
-    fontFamily: 'monospace',
+  subCardTitle: { color: '#2563EB', fontSize: 14, marginBottom: 6 },
+  infoText: { color: '#3B6FA0', fontSize: 13, lineHeight: 19, marginBottom: 3 },
+  infoStrong: { color: '#1D4ED8', fontSize: 12, marginBottom: 4, fontWeight: '700' },
+  proofLink: {
+    backgroundColor: 'rgba(59,130,246,0.1)', borderRadius: 12, borderWidth: 2,
+    borderColor: '#BFDBFE', paddingVertical: 10, paddingHorizontal: 12, marginTop: 8, marginBottom: 6,
   },
-  metaRow: { flexDirection: 'row', marginBottom: 2 },
-  metaPill: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.3)', borderWidth: 0.8, borderColor: 'rgba(255, 188, 120, 0.25)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 10, marginRight: 8, backdropFilter: 'blur(8px)' },
-  metaKey: { color: '#666666', fontSize: 11, marginBottom: 2, fontFamily: 'Poppins_700Bold' },
-  metaVal: { color: '#151515', fontSize: 12, fontFamily: 'Poppins_500Medium' },
-  buttonRowWrap: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: 10 },
-  actionButton: {
-    minWidth: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    marginLeft: 8,
-    marginTop: 8,
-    cursor: 'pointer',
+  proofLinkText: { color: '#2563EB', fontSize: 13 },
+
+  // Badges
+  approvedBadge: {
+    backgroundColor: '#D1FAE5', borderRadius: 12, borderWidth: 2, borderColor: '#6EE7B7',
+    paddingVertical: 7, paddingHorizontal: 12, marginBottom: 6, alignSelf: 'flex-start',
   },
-  primaryAction: { backgroundColor: 'rgba(255, 122, 62, 0.8)', borderColor: 'rgba(255, 188, 120, 0.28)', borderWidth: 1.1 },
-  successAction: { backgroundColor: 'rgba(74, 222, 128, 0.75)', borderColor: 'rgba(132, 204, 22, 0.28)', borderWidth: 1.1 },
-  neutralAction: { backgroundColor: 'rgba(255, 255, 255, 0.32)', borderColor: 'rgba(255, 188, 120, 0.32)', borderWidth: 1.1 },
-  dangerAction: { backgroundColor: 'rgba(239, 68, 68, 0.7)', borderColor: 'rgba(255, 107, 107, 0.28)', borderWidth: 1.1 },
-  approveAction: { backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(147, 197, 253, 0.28)', borderWidth: 1.1 },
-  refreshAction: { backgroundColor: 'rgba(255, 122, 62, 0.8)', minWidth: 96, borderColor: 'rgba(255, 188, 120, 0.28)', borderWidth: 1.1 },
-  tabActive: { backgroundColor: 'rgba(255, 122, 62, 0.8)', minWidth: 90, borderColor: 'rgba(255, 188, 120, 0.28)', borderWidth: 1.1 },
-  tabInactive: { backgroundColor: 'rgba(255, 255, 255, 0.2)', minWidth: 90, borderColor: 'rgba(255, 188, 120, 0.25)', borderWidth: 1.1 },
-  logoutAction: { backgroundColor: 'rgba(255, 122, 62, 0.85)', minHeight: 50, marginTop: 8, borderColor: 'rgba(255, 188, 120, 0.32)', borderWidth: 1.2 },
-  actionButtonText: { color: '#FFFFFF', fontSize: 13, letterSpacing: 0.25, fontFamily: 'Poppins_700Bold' },
-  actionDisabled: { opacity: 0.55 },
-  mentorApprovedBadge: { backgroundColor: 'rgba(74, 222, 128, 0.2)', borderWidth: 1.5, borderColor: 'rgba(74, 222, 128, 0.4)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 6, alignSelf: 'flex-start' },
-  mentorApprovedText: { color: '#4ADE80', fontSize: 13, fontFamily: 'Poppins_700Bold' },
-  mentorRejectedBadge: { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderWidth: 1.5, borderColor: 'rgba(239, 68, 68, 0.35)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 6, alignSelf: 'flex-start' },
-  mentorRejectedText: { color: '#EF4444', fontSize: 13, fontFamily: 'Poppins_700Bold' },
-  emptyBox: { marginTop: 16, backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 14, borderWidth: 1.2, borderColor: 'rgba(255, 188, 120, 0.25)', padding: 22, alignItems: 'center', backdropFilter: 'blur(8px)' },
-  emptyTitle: { color: '#E7672E', fontSize: 16, fontFamily: 'Poppins_800ExtraBold' },
-  emptyTxt: { color: '#666666', fontSize: 13, marginTop: 5, textAlign: 'center', fontFamily: 'Poppins_500Medium' },
+  approvedBadgeText: { color: '#064E3B', fontSize: 12 },
+  rejectedBadge: {
+    backgroundColor: '#FEE2E2', borderRadius: 12, borderWidth: 2, borderColor: '#FCA5A5',
+    paddingVertical: 7, paddingHorizontal: 12, marginBottom: 6, alignSelf: 'flex-start',
+  },
+  rejectedBadgeText: { color: '#7F1D1D', fontSize: 12 },
+
+  // Meta pills
+  metaRow: { flexDirection: 'row', marginBottom: 4, gap: 8 },
+  metaPill: {
+    flex: 1, backgroundColor: '#EEF6FF', borderRadius: 14, borderWidth: 2,
+    borderColor: '#BFDBFE', paddingVertical: 8, paddingHorizontal: 10,
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 2,
+  },
+  metaKey: { color: '#60A5FA', fontSize: 11, marginBottom: 2 },
+  metaVal: { color: '#1E3A5F', fontSize: 12 },
+
+  // Clay Buttons
+  btnRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, justifyContent: 'flex-end' },
+  clayBtn: {
+    minWidth: 90, alignItems: 'center', justifyContent: 'center',
+    borderRadius: 14, paddingVertical: 9, paddingHorizontal: 14,
+    shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.28, shadowRadius: 8, elevation: 6,
+    borderWidth: 2,
+  },
+  clayBtnText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  clayBtnDisabled: { opacity: 0.5 },
+
+  // Empty
+  emptyBox: {
+    backgroundColor: '#FFFFFF', borderRadius: 24, borderWidth: 3, borderColor: '#BFDBFE',
+    padding: 28, alignItems: 'center', marginTop: 10,
+    shadowColor: '#93C5FD', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.14, shadowRadius: 12, elevation: 6,
+  },
+  emptyIcon: { fontSize: 40, marginBottom: 8 },
+  emptyTitle: { color: '#2563EB', fontSize: 17, fontWeight: '900', fontFamily: 'Poppins_800ExtraBold' },
+  emptyTxt: { color: '#64A4D8', fontSize: 13, marginTop: 4, textAlign: 'center', fontFamily: 'Poppins_500Medium' },
+
+  // Logout
+  logoutBtn: {
+    backgroundColor: '#3B82F6', borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+    minHeight: 52, marginTop: 6, borderWidth: 2.5, borderColor: '#60A5FA',
+    shadowColor: '#1D4ED8', shadowOffset: { width: 0, height: 7 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 10,
+  },
+  logoutBtnText: { color: '#FFFFFF', fontSize: 15 },
 });
-
-
