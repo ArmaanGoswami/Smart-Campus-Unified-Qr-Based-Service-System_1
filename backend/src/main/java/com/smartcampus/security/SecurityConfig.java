@@ -24,8 +24,10 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http.cors(cors -> {})
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/gate-pass/pending", "/api/gate-pass/history", "/api/gate-pass/*/approve", "/api/gate-pass/*/reject").hasRole("WARDEN")
                 .requestMatchers("/api/gate-pass", "/api/gate-pass/student/**").hasRole("STUDENT")

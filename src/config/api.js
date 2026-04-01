@@ -1,3 +1,5 @@
+import { getToken } from './auth';
+
 const createBaseUrls = () => {
   const urls = [];
 
@@ -24,19 +26,17 @@ const GATE_PASS_API = getGatePassApi(BASE_URL);
 
 async function fetchWithTimeout(url, options) {
   const controller = new AbortController();
-  // Reduce timeout for local candidates to 3.5s to fail-fast if computer is off/wrong network,
-  // but keep longer for Render (production).
   const isLocal = url.includes('localhost') || url.includes('127.0.0.1') || url.includes('10.');
   const timeoutMs = isLocal ? 4500 : 25000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     return await fetch(url, {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
         ...(options.headers || {}),
       },
-      ...options,
       signal: controller.signal,
     });
   } finally {
@@ -44,13 +44,14 @@ async function fetchWithTimeout(url, options) {
   }
 }
 
-export async function request(path, options = {}) {
+// ─── Auth request (login) — no JWT needed ─────────────────────────────────────
+export async function authRequest(path, options = {}) {
   let response;
   let lastNetworkError = null;
-  let lastEndpoint = `${GATE_PASS_API}${path}`;
+  let lastEndpoint = '';
 
   for (const baseUrl of BASE_URLS) {
-    const endpoint = `${getGatePassApi(baseUrl)}${path}`;
+    const endpoint = `${baseUrl}/api/auth${path}`;
     lastEndpoint = endpoint;
 
     try {
@@ -89,5 +90,59 @@ export async function request(path, options = {}) {
   return body;
 }
 
-export { BASE_URL, GATE_PASS_API };
+// ─── Authenticated request (gate-pass API) — attaches JWT ─────────────────────
+export async function request(path, options = {}) {
+  const token = getToken();
+  const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
+  let response;
+  let lastNetworkError = null;
+  let lastEndpoint = `${GATE_PASS_API}${path}`;
+
+  for (const baseUrl of BASE_URLS) {
+    const endpoint = `${getGatePassApi(baseUrl)}${path}`;
+    lastEndpoint = endpoint;
+
+    try {
+      response = await fetchWithTimeout(endpoint, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          ...authHeaders,
+        },
+      });
+      break;
+    } catch (error) {
+      lastNetworkError = error;
+    }
+  }
+
+  if (!response) {
+    if (lastNetworkError?.name === 'AbortError') {
+      throw new Error(`Request timeout: ${lastEndpoint} did not respond in time.`);
+    }
+    throw new Error(`Network error: Unable to connect to backend service at ${lastEndpoint}.`);
+  }
+
+  const rawText = await response.text();
+  let body = null;
+
+  if (rawText) {
+    try {
+      body = JSON.parse(rawText);
+    } catch (error) {
+      body = rawText;
+    }
+  }
+
+  if (!response.ok) {
+    const message = typeof body === 'string'
+      ? body
+      : body?.message || body?.error || `Request failed with status ${response.status}`;
+    throw new Error(`HTTP ${response.status}: ${message}`);
+  }
+
+  return body;
+}
+
+export { BASE_URL, GATE_PASS_API };

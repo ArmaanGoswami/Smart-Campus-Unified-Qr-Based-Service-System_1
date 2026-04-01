@@ -11,6 +11,9 @@ import {
   Platform,
 } from 'react-native';
 import Svg, { Circle, Ellipse, Rect, Path } from 'react-native-svg';
+import { authRequest } from '../config/api';
+import { setAuth } from '../config/auth';
+import { crossAlert } from '../config/utils';
 
 // ─── Clay Human Character ────────────────────────────────────────────────────
 function StudentCharacter({ size = 120 }) {
@@ -58,12 +61,29 @@ export default function LoginScreen({ navigation }) {
   const [userId,   setUserId]   = useState('');
   const [password, setPassword] = useState('');
   const [role,     setRole]     = useState('Student');
+  const [loading,  setLoading]  = useState(false);
 
-  const handleLogin = () => {
-    if (!userId || !password) { Alert.alert('Oops!', 'Please fill in both ID and Password 😊'); return; }
-    if (role === 'Student') navigation.replace('Student');
-    else if (role === 'Warden') navigation.replace('Warden');
-    else if (role === 'Guard')  navigation.replace('Guard');
+  const handleLogin = async () => {
+    if (!userId || !password) { crossAlert('Oops!', 'Please fill in both ID and Password 😊'); return; }
+    try {
+      setLoading(true);
+      const result = await authRequest('/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: userId.trim(), password: password }),
+      });
+      // result = { token, role, username }
+      setAuth(result.token, result.role, result.username);
+
+      const backendRole = (result.role || '').toUpperCase();
+      if (backendRole.includes('STUDENT')) navigation.replace('Student');
+      else if (backendRole.includes('WARDEN')) navigation.replace('Warden');
+      else if (backendRole.includes('GUARD'))  navigation.replace('Guard');
+      else navigation.replace('Student');
+    } catch (error) {
+      crossAlert('Login Failed', error?.message || 'Invalid credentials or server unavailable.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const roles = [
@@ -128,8 +148,8 @@ export default function LoginScreen({ navigation }) {
             onChangeText={setPassword}
           />
 
-          <TouchableOpacity style={styles.loginBtn} activeOpacity={0.88} onPress={handleLogin}>
-            <Text style={styles.loginBtnText}>Login as {role} →</Text>
+          <TouchableOpacity style={[styles.loginBtn, loading && { opacity: 0.6 }]} activeOpacity={0.88} onPress={handleLogin} disabled={loading}>
+            <Text style={styles.loginBtnText}>{loading ? 'Logging in...' : `Login as ${role} →`}</Text>
           </TouchableOpacity>
 
           <Text style={styles.footNote}>Secure QR-based hostel movement tracking</Text>

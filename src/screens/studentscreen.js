@@ -28,8 +28,9 @@ import {
 import Svg, { Circle, Ellipse, Rect, Path, G } from 'react-native-svg';
 import { request } from '../config/api';
 import { crossAlert } from '../config/utils';
+import { getUsername } from '../config/auth';
 
-const STUDENT_ID = 'STU123';
+const STUDENT_ID = getUsername() || 'STU123';
 const PARENT_VERIFICATION_NUMBER = '9876543210';
 
 const STATUS = {

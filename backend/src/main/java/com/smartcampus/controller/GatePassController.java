@@ -13,7 +13,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/gate-pass")
-@CrossOrigin(origins = "*") 
 public class GatePassController {
 
     @Autowired
