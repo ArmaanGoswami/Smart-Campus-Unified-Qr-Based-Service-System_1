@@ -6,14 +6,9 @@ const createBaseUrls = () => {
   // On web, use the current hostname so localhost/LAN setups work without code changes.
   if (typeof window !== 'undefined' && window.location?.hostname) {
     urls.push(`http://${window.location.hostname}:8080`);
+  } else {
+    urls.push('http://localhost:8080');
   }
-
-  // Common local development endpoints
-  urls.push('http://10.200.3.225:8080'); // User's computer LAN IP
-  urls.push('http://10.0.2.2:8080');    // Android Emulator loopback
-  urls.push('http://localhost:8080');
-  urls.push('http://127.0.0.1:8080');
-  urls.push('https://smart-campus-unified-qr-based-service.onrender.com');
 
   return [...new Set(urls)];
 };
@@ -27,7 +22,7 @@ const GATE_PASS_API = getGatePassApi(BASE_URL);
 async function fetchWithTimeout(url, options) {
   const controller = new AbortController();
   const isLocal = url.includes('localhost') || url.includes('127.0.0.1') || url.includes('10.');
-  const timeoutMs = isLocal ? 4500 : 25000;
+  const timeoutMs = isLocal ? 12000 : 25000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {

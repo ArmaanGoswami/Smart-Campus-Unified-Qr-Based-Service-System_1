@@ -1,0 +1,878 @@
+\documentclass[11pt]{beamer}
+\usepackage[utf-8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{array}
+
+% Theme
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[page number]
+
+% Custom colors
+\definecolor{darkblue}{rgb}{0.2,0.4,0.8}
+\definecolor{lightblue}{rgb}{0.8,0.9,1.0}
+\definecolor{darkgreen}{rgb}{0.2,0.6,0.3}
+\definecolor{lightgreen}{rgb}{0.8,1.0,0.9}
+\definecolor{darkorange}{rgb}{1.0,0.5,0.0}
+
+% Code formatting - Simplified
+\lstset{
+    basicstyle=\ttfamily\tiny,
+    breaklines=true,
+    showstringspaces=false,
+    backgroundcolor=\color{lightblue!20},
+    frame=single
+}
+
+\title{Smart Campus Unified QR-Based Service System}
+\subtitle{Complete Technical Overview \& Implementation Guide}
+\author{Development Team}
+\date{March 31, 2026}
+\institute{Smart Campus Project}
+
+\begin{document}
+
+% Title Slide
+\frame{\titlepage}
+
+% Table of Contents
+\begin{frame}
+\frametitle{Table of Contents}
+\tableofcontents
+\end{frame}
+
+% ============================================================================
+\section{Project Overview}
+% ============================================================================
+
+\begin{frame}
+\frametitle{What is Smart Campus?}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{Problem:}
+\begin{itemize}
+    \item \textcolor{red}{\(\times\)} Paper-based gate passes (slow, easy to forge)
+    \item \textcolor{red}{\(\times\)} Manual guard verification (time-consuming)
+    \item \textcolor{red}{\(\times\)} No centralized records
+    \item \textcolor{red}{\(\times\)} Difficult to generate reports
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Solution:}
+\begin{itemize}
+    \item \textcolor{darkgreen}{\checkmark} Digital QR code passes
+    \item \textcolor{darkgreen}{\checkmark} Instant QR verification
+    \item \textcolor{darkgreen}{\checkmark} Centralized database
+    \item \textcolor{darkgreen}{\checkmark} Automated reporting
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\begin{center}
+\textbf{\Large Digital Gate Pass Management System}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{System Components}
+\begin{center}
+\textbf{Mobile App (Expo)}  $\rightarrow$  \textbf{Backend (Spring Boot)}  $\rightarrow$  \textbf{Database (MongoDB)}
+
+\vspace{0.5cm}
+\textcolor{gray}{HTTP/HTTPS}  |  \textcolor{gray}{Query}
+
+\vspace{0.5cm}
+\textbf{\colorbox{darkorange!20}{JWT Authentication Layer}}
+\end{center}
+
+\vspace{1cm}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Component} & \textbf{Technology} & \textbf{Port} \\
+\hline
+Frontend & React Native + Expo 54 & 8081 \\
+Backend & Spring Boot 3.x + Java & 8080 \\
+Database & MongoDB & 27017 \\
+\hline
+\end{tabular}
+\end{frame}
+
+% ============================================================================
+\section{Technology Stack}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Frontend Technology}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{React Native + Expo}
+\begin{itemize}
+    \item Cross-platform (iOS + Android)
+    \item Single codebase
+    \item Hot reload for development
+    \item Native performance
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Key Libraries}
+\begin{itemize}
+    \item \texttt{@react-native-async-storage}
+    \item \texttt{expo-camera} (QR scanning)
+    \item \texttt{react-navigation}
+    \item \texttt{react-native-reanimated}
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\begin{center}
+\begin{tabularx}{0.8\textwidth}{|X|X|}
+\hline
+\textbf{Dependency} & \textbf{Version} \\
+\hline
+React Native & 0.76.1 \\
+Expo & 54.0.0 \\
+React & 19.1.0 \\
+\hline
+\end{tabularx}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Backend Technology}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{Spring Boot + Java}
+\begin{itemize}
+    \item Enterprise-grade security
+    \item JWT authentication
+    \item Role-based access control
+    \item CORS configuration
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Core Modules}
+\begin{itemize}
+    \item \texttt{JwtUtils.java}
+    \item \texttt{JwtAuthenticationFilter}
+    \item \texttt{SecurityConfig}
+    \item \texttt{CorsConfig}
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\textbf{REST API Endpoints:}
+\begin{itemize}
+    \item \texttt{POST /api/auth/login} - Authentication
+    \item \texttt{POST /api/gatepass/request} - Create gate pass
+    \item \texttt{GET /api/warden/pending} - Pending approvals
+    \item \texttt{POST /api/guard/scan} - QR verification
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+\section{JWT Authentication}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Why JWT Tokens?}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{Session-Based (Old)}
+\begin{itemize}
+    \item Server stores session data
+    \item Doesn't scale well
+    \item Mobile unfriendly
+    \item Requires server memory
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{JWT Token (New)}
+\begin{itemize}
+    \item \textcolor{darkgreen}{Stateless}
+    \item \textcolor{darkgreen}{Mobile-friendly}
+    \item \textcolor{darkgreen}{Instantly verifiable}
+    \item \textcolor{darkgreen}{Scales horizontally}
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\textbf{Perfect for Intranet:}
+\begin{itemize}
+    \item No external identity provider needed
+    \item Self-contained security
+    \item Offline capability
+    \item Token storage in AsyncStorage
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{JWT Token Lifecycle}
+\begin{center}
+\textbf{1. Login}
+$\rightarrow$
+\textbf{2. Generate Token}
+$\rightarrow$
+\textbf{3. Store in Phone}
+$\rightarrow$
+\textbf{4. Use in Requests}
+\end{center}
+
+\vspace{1cm}
+\textbf{Token Structure:}
+\begin{lstlisting}
+Header: { "alg": "HS256", "typ": "JWT" }
+Payload: { "sub": "STU123", "role": "STUDENT" }
+Signature: HMACSHA256(secret)
+\end{lstlisting}
+
+\vspace{0.5cm}
+\textbf{Expiry:} 10 hours after generation
+\end{frame}
+
+% ============================================================================
+\section{System Architecture}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Complete Data Flow}
+\begin{center}
+\small
+
+\textbf{Student Phone}
+
+$\downarrow$ (1. Create Request)
+
+\textbf{Backend API (Port 8080)}
+
+$\downarrow$ (Save to DB)
+
+\textbf{MongoDB}
+
+$\uparrow$ (Notify Warden)
+
+\textbf{Warden Phone}
+
+$\downarrow$ (2. Approve/Reject)
+
+\textbf{Backend API}
+
+$\downarrow$ (Update in DB)
+
+\textbf{MongoDB}
+
+$\uparrow$ (Notify Student)
+
+\textbf{Student Phone} (QR visible)
+
+$\downarrow$ (3. Show to Guard)
+
+\textbf{Guard Phone}
+
+$\downarrow$ (4. Scan QR)
+
+\textbf{Backend API}
+
+$\downarrow$ (Log Access)
+
+\textbf{MongoDB} (Access logged)
+
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{API Request Flow with JWT}
+\begin{lstlisting}
+POST /api/gatepass/request
+Authorization: Bearer [token]
+
+Backend Steps:
+1. Extract token from Authorization header
+2. Verify signature with secret key
+3. Check token expiration
+4. Extract userId and role from claims
+5. Validate user permissions
+6. Generate QR code
+7. Save to MongoDB
+8. Return success response
+\end{lstlisting}
+\end{frame}
+
+% ============================================================================
+\section{Features by Role}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Three User Roles}
+\begin{columns}[T]
+\column{0.33\textwidth}
+\textbf{\textcolor{darkblue}{STUDENT}}
+\begin{itemize}
+    \item Request gate pass
+    \item Specify destination
+    \item Set exit time
+    \item View QR code
+    \item Check status
+\end{itemize}
+
+\column{0.33\textwidth}
+\textbf{\textcolor{darkgreen}{WARDEN}}
+\begin{itemize}
+    \item View pending requests
+    \item See student details
+    \item Approve request
+    \item Reject with reason
+    \item Track approvals
+\end{itemize}
+
+\column{0.33\textwidth}
+\textbf{\textcolor{darkorange}{GUARD}}
+\begin{itemize}
+    \item Open camera
+    \item Scan QR code
+    \item Verify pass
+    \item Log entry/exit
+    \item View access logs
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\textbf{Demo Credentials:}
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Role} & \textbf{ID} & \textbf{Password} \\
+\hline
+Student & STU123 & password123 \\
+Warden & WAR456 & wardenpass \\
+Guard & GAR789 & guardpass \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Student Flow}
+\begin{enumerate}
+    \item \textbf{Login:} Enter STU123 / password123
+    \item \textbf{Dashboard:} See forms and request history
+    \item \textbf{Create Request:} Fill destination, purpose, exit time
+    \item \textbf{Submit:} Send to backend
+    \item \textbf{Backend:}
+    \begin{itemize}
+        \item Generate QR code
+        \item Create DB record
+        \item Notify warden
+    \end{itemize}
+    \item \textbf{Wait:} Status shows "PENDING"
+    \item \textbf{Approved:} QR code visible
+    \item \textbf{Gate:} Show QR to guard
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Warden Flow}
+\begin{enumerate}
+    \item \textbf{Login:} Role = WARDEN
+    \item \textbf{Pending List:} See all requests needing approval
+    \item \textbf{Review:} Click request to see details
+    \begin{itemize}
+        \item Student name
+        \item Destination
+        \item Purpose
+        \item Requested time
+    \end{itemize}
+    \item \textbf{Decision:}
+    \begin{itemize}
+        \item \textcolor{darkgreen}{APPROVE} \textit{Status changes, QR visible to student}
+        \item \textcolor{red}{REJECT} \textit{Status changes, reason sent}
+    \end{itemize}
+    \item \textbf{Log:} Approval recorded in database
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Guard Flow}
+\begin{enumerate}
+    \item \textbf{Login:} Role = GUARD
+    \item \textbf{Open Camera:} Guard screen shows live camera
+    \item \textbf{Scan QR:} Student shows QR code
+    \item \textbf{Verification:}
+    \begin{itemize}
+        \item Extract pass data from QR
+        \item Check if valid
+        \item Check if not expired
+        \item Check if APPROVED status
+    \end{itemize}
+    \item \textbf{Result:}
+    \begin{itemize}
+        \item \textcolor{darkgreen}{\checkmark VERIFIED} \textit{Allow entry}
+        \item \textcolor{red}{\(\times\) INVALID} \textit{Deny entry}
+    \end{itemize}
+    \item \textbf{Log:} Access time recorded
+\end{enumerate}
+\end{frame}
+
+% ============================================================================
+\section{Security}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Security Measures}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{Frontend Security}
+\begin{itemize}
+    \item Token in AsyncStorage
+    \item Auto-cleared on logout
+    \item No sensitive data logged
+    \item XSRF protected
+    \item Input validation
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Backend Security}
+\begin{itemize}
+    \item JWT signature verification
+    \item Token expiry enforcement
+    \item Role validation (per-request)
+    \item Password hashing (Bcrypt)
+    \item CORS whitelist
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\textbf{Database Security}
+\begin{itemize}
+    \item MongoDB encrypted at rest
+    \item Credentials in environment variables
+    \item No direct internet access
+    \item Backup and recovery procedures
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Authentication Process}
+\begin{center}
+
+\textbf{1. User Credentials}
+$\rightarrow$
+
+\textbf{2. Backend Validates}
+$\rightarrow$
+
+\textbf{3. Generate JWT Token}
+
+$\downarrow$
+
+\textbf{4. Store in Phone} (AsyncStorage)
+
+$\downarrow$
+
+\textbf{5. API Request with Token}
+$\rightarrow$
+
+\textbf{6. Verify Token}
+
+$\downarrow$
+
+\textbf{Allow Request}
+
+\end{center}
+\end{frame}
+
+% ============================================================================
+\section{Development Tools}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Auto-Sync System}
+\textbf{Problem:} Developers had to manually pull code from GitHub every time
+
+\vspace{0.5cm}
+\textbf{Solution:} sync.js - Automatic before every start
+
+\begin{lstlisting}
+npm start
+  -> npm run presync
+     -> node sync.js
+        - git stash (backup local changes)
+        - git pull origin main (get latest)
+        - Clear .expo cache
+        - Start fresh application
+\end{lstlisting}
+
+\vspace{1cm}
+\textbf{Benefits:}
+\begin{itemize}
+    \item Always latest code
+    \item No cache issues
+    \item Seamless workflow
+    \item No manual operations
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{API Fallback Strategy}
+\textbf{Multiple Backend URLs with Fallback}
+
+\begin{lstlisting}
+const FALLBACK_URLS = [
+  "http://render-backend.com",
+  "http://192.168.1.100:8080",
+  "http://localhost:8080"
+];
+
+Try each URL until one responds
+\end{lstlisting}
+
+\vspace{1cm}
+\textbf{Benefits:}
+\begin{itemize}
+    \item Works in lab, home, or cloud
+    \item Automatic failover
+    \item No code changes needed
+\end{itemize}
+\end{frame}
+
+% ============================================================================
+\section{Getting Started}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Backend Setup}
+\begin{lstlisting}
+cd backend
+
+./mvnw clean install
+# Or: mvn clean install
+
+./mvnw spring-boot:run
+# Backend on: http://localhost:8080
+
+# MongoDB should be on localhost:27017
+\end{lstlisting}
+
+\vspace{0.5cm}
+\textbf{Requirements:}
+\begin{itemize}
+    \item Maven 3.9.9+
+    \item Java 17+
+    \item MongoDB running locally
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Frontend Setup}
+\begin{lstlisting}
+cd LeaveQRApp
+
+npm install
+
+npm start
+
+# Open Expo Go app on phone
+# Scan QR code to run app
+
+# Demo credentials:
+# ID: STU123, Password: password123
+\end{lstlisting}
+
+\vspace{0.5cm}
+\textbf{The app will:}
+\begin{enumerate}
+    \item Auto-sync latest code from GitHub
+    \item Clear all caches
+    \item Start fresh Expo server
+    \item Ready to test!
+\end{enumerate}
+\end{frame}
+
+\begin{frame}
+\frametitle{Testing}
+\begin{lstlisting}
+# Test JWT token generation and verification
+node test-jwt.js
+
+# Expected output:
+# Logged in successfully
+# Token generated: eyJhbGc...
+# Token is valid
+# Can make API calls
+# Protected endpoint accessible
+\end{lstlisting}
+
+\vspace{1cm}
+\textbf{Manual Testing:}
+\begin{enumerate}
+    \item Login as Student (STU123)
+    \item Create gate pass request
+    \item Login as Warden (WAR456)
+    \item Approve the request
+    \item Login as Guard (GAR789)
+    \item Scan the QR code
+\end{enumerate}
+\end{frame}
+
+% ============================================================================
+\section{Deployment}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Deployment Options}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{Local Network (Dev)}
+\begin{itemize}
+    \item Frontend: Expo 8081
+    \item Backend: localhost:8080
+    \item For: Development only
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Railway.app}
+\begin{itemize}
+    \item Deploy JAR file
+    \item Free tier available
+    \item For: Production
+\end{itemize}
+\end{columns}
+
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{DigitalOcean}
+\begin{itemize}
+    \item VPS or App Platform
+    \item \$6-12/month
+    \item Full control
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{AWS/Azure}
+\begin{itemize}
+    \item Enterprise option
+    \item Auto-scaling
+    \item Premium support
+\end{itemize}
+\end{columns}
+
+\vspace{1cm}
+\textbf{Recommended:} Railway.app for production, local for development
+\end{frame}
+
+% ============================================================================
+\section{Status \& Future}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Current Features}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{\textcolor{darkgreen}{[DONE] Completed}}
+\begin{itemize}
+    \item JWT authentication
+    \item Gate pass creation
+    \item Warden approvals
+    \item Guard QR scanning
+    \item Database integration
+    \item Auto-sync system
+    \item CORS configuration
+    \item Role-based access
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{\textcolor{darkorange}{[WORKING] In Progress}}
+\begin{itemize}
+    \item Production deployment
+    \item SMS notifications
+    \item Email confirmations
+    \item Analytics dashboard
+    \item Offline mode
+    \item Advanced logging
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\begin{frame}
+\frametitle{Future Enhancements}
+\begin{enumerate}
+    \item \textbf{Phase 2: Notifications}
+    \begin{itemize}
+        \item SMS on approval
+        \item Email confirmations
+        \item Push notifications
+    \end{itemize}
+    
+    \item \textbf{Phase 3: Advanced Features}
+    \begin{itemize}
+        \item Student location tracking
+        \item Late return alerts
+        \item Analytics reports
+    \end{itemize}
+    
+    \item \textbf{Phase 4: Integration}
+    \begin{itemize}
+        \item Hostel management system
+        \item Course registration
+        \item Grievance portal
+    \end{itemize}
+\end{enumerate}
+\end{frame}
+
+% ============================================================================
+\section{Team Guide}
+% ============================================================================
+
+\begin{frame}
+\frametitle{For New Team Members}
+
+\textbf{Step 1: Understanding the Project}
+\begin{itemize}
+    \item Read \texttt{SIMPLE\_PROJECT\_GUIDE\_FOR\_TEAM.md}
+    \item Understand JWT token concept
+    \item Study the data flow diagram
+\end{itemize}
+
+\textbf{Step 2: Local Setup}
+\begin{enumerate}
+    \item Clone repository from GitHub
+    \item \texttt{npm install} (frontend)
+    \item \texttt{mvn clean install} (backend)
+    \item Start backend: \texttt{./mvnw spring-boot:run}
+    \item Start frontend: \texttt{npm start}
+\end{enumerate}
+
+\textbf{Step 3: Test the System}
+\begin{itemize}
+    \item Login as Student, Warden, Guard
+    \item Create, approve, and scan a gate pass
+    \item Check database records
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Important Files}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{File} & \textbf{Purpose} \\
+\hline
+\texttt{src/config/api.js} & JWT token management \\
+\texttt{sync.js} & Auto-sync from GitHub \\
+\texttt{JwtUtils.java} & Token generation \\
+\texttt{JwtAuthenticationFilter} & JWT verification \\
+\texttt{SecurityConfig.java} & Spring Security setup \\
+\texttt{CorsConfig.java} & Cross-origin configuration \\
+\texttt{*Controller.java} & API endpoints \\
+\hline
+\end{tabular}
+
+\vspace{1cm}
+\textbf{Database Collections:}
+\begin{itemize}
+    \item \texttt{users} - Login data
+    \item \texttt{gatepasses} - Requests and approvals
+    \item \texttt{accesslogs} - QR scans
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Troubleshooting}
+\begin{columns}[T]
+\column{0.5\textwidth}
+\textbf{``Token is invalid''}
+\begin{itemize}
+    \item Token expired (login again)
+    \item Corrupted token (clear storage)
+\end{itemize}
+
+\textbf{``API endpoint not found''}
+\begin{itemize}
+    \item Backend not running
+    \item Check port 8080
+    \item Verify CORS config
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{``QR code not scanning''}
+\begin{itemize}
+    \item Grant camera permission
+    \item Proper lighting
+    \item Valid QR format
+\end{itemize}
+
+\textbf{``Stale code showing''}
+\begin{itemize}
+    \item Run \texttt{npm start} (auto-syncs)
+    \item Clear phone cache
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% ============================================================================
+\section{Questions \& Contact}
+% ============================================================================
+
+\begin{frame}
+\frametitle{Key Takeaways}
+\begin{enumerate}
+    \item \textbf{JWT tokens} provide stateless, mobile-friendly authentication
+    \item \textbf{Three dashboards} (Student, Warden, Guard) with specific roles
+    \item \textbf{QR codes} enable instant, contactless verification
+    \item \textbf{Auto-sync} keeps code always fresh
+    \item \textbf{Intranet-compatible} - no external dependencies
+    \item \textbf{Secure} - role-based access, encrypted tokens
+\end{enumerate}
+
+\vspace{1cm}
+\begin{center}
+\textbf{\Large Questions?}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Contact \& Resources}
+\begin{center}
+\Large
+\textbf{Project Documentation:}
+\begin{itemize}
+    \item \texttt{PROJECT\_DOCUMENTATION.md}
+    \item \texttt{SIMPLE\_PROJECT\_GUIDE\_FOR\_TEAM.md}
+\end{itemize}
+
+\vspace{1cm}
+\textbf{GitHub Repository:}
+\begin{itemize}
+    \item Main branch for latest code
+    \item auto-sync pulls from here
+\end{itemize}
+
+\vspace{1cm}
+\textbf{Questions?}
+\begin{itemize}
+    \item Contact development team
+    \item Check documentation first
+    \item Test locally before asking
+\end{itemize}
+\end{center}
+\end{frame}
+
+% Final Slide
+\frame{
+\begin{center}
+\Large\textbf{Smart Campus System}\\
+\vspace{0.5cm}
+Digital solutions for modern campus management\\
+\vspace{1cm}
+\textit{Built with React Native, Spring Boot, and MongoDB}\\
+\vspace{1cm}
+Version 1.0 - March 31, 2026\\
+\vspace{1cm}
+\textcolor{darkblue}{\textbf{Let's Build the Future!}}
+\end{center}
+}
+
+\end{document}

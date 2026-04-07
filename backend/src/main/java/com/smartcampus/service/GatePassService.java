@@ -225,10 +225,11 @@ public class GatePassService {
     }
 
     public List<GatePass> getWardenHistory() {
-        Set<String> historyStatuses = Set.of("APPROVED", "REJECTED", "USED", "EXITED", "COMPLETED");
-        return repository.findAll().stream()
-                .filter(pass -> historyStatuses.contains((pass.getStatus() == null ? "" : pass.getStatus()).toUpperCase()))
-                .collect(Collectors.toList());
+        // Fetch matching statuses in specific casing options just in case, but let's use standard capitalized values.
+        List<String> statuses = List.of("Approved", "Rejected", "Used", "Exited", "Completed", "APPROVED", "REJECTED", "USED", "EXITED", "COMPLETED");
+        List<GatePass> passes = repository.findHistoryForWarden(statuses);
+        passes.sort(Comparator.comparing(GatePass::getId, Comparator.nullsLast(String::compareTo)).reversed());
+        return passes;
     }
 
     public List<GatePass> getGuardTodayHistory() {

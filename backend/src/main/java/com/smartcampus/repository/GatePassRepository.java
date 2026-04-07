@@ -24,4 +24,8 @@ public interface GatePassRepository extends MongoRepository<GatePass, String> {
 
     // Guard scans for audit (today)
     List<GatePass> findByScannedAtBetweenOrderByScannedAtDesc(LocalDateTime start, LocalDateTime end);
+
+    // Warden history optimized (using native Mongo query). Exclude heavy base64 image data!
+    @org.springframework.data.mongodb.repository.Query(value = "{ 'status': { $in: ?0 } }", fields = "{ 'mentorProofImage': 0 }")
+    List<GatePass> findHistoryForWarden(List<String> statuses);
 }
